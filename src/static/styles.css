@@ -1,0 +1,217 @@
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+
+h1, h2 {
+    color: #ffcc00; /* Gold accent for titles */
+}
+
+#search-form {
+    position: relative;
+}
+
+.suggestions {
+    position: absolute; 
+    color:#000;
+    top: 100%;
+    left: 0;
+    width: 100%; 
+    border: 1px solid #ddd;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    margin-top: 5px;
+    z-index: 20;
+}
+
+.suggestion-item {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
+}
+
+
+/* Navigation buttons */
+/* Navigation buttons */
+.nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 18px;
+}
+
+.nav.left {
+    left: 10px;
+}
+
+.nav.right {
+    right: 10px;
+}
+
+/* Recommendations container */
+.recommendations {
+    position: relative; 
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #eaeaea;
+}
+.recommendation-container {
+    position: relative; 
+    display: flex;
+    align-items: center;
+    overflow-x: hidden;
+}
+
+.recommendation-list {
+    display: flex;
+    list-style-type: none;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+}
+
+.recommendation-item {
+    display: inline-block;
+    text-wrap: auto;
+    width: 200px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.recommendation-item:hover {
+    transform: scale(1.06);
+    transition: transform 0.3s ease;
+}
+
+.recommendation-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.nav.left {
+    left: 10px;
+}
+.nav.right {
+    right: 10px;
+}
+.nav:hover {
+    background-color: rgba(255, 204, 0, 0.9); 
+}
+
+/* Game details container and list */
+.game-details {
+    display: block;
+    padding: 20px;
+    border: 1px solid #444;
+    margin-top: 20px;
+    background-color: #222;
+}
+
+
+.game-details.hidden {
+    display: none;
+}
+
+#game-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#game-description {
+    font-size: 16px;
+    margin-bottom: 20px;
+    max-width: 700px;
+}
+
+#game-description .bb_img{
+    width: 100%;
+    max-width: 600px;
+    align-self: center;
+}
+
+/* Media slider container */
+.media-slider {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory; /* Snap to horizontal items */
+    padding: 20px;
+    justify-content: flex-start;
+    align-items: center; /* Prevent vertical movement */
+    position: relative;
+    white-space: nowrap;
+}
+
+.media-item {
+    flex: 0 0 auto;
+    scroll-snap-align: center; /* Ensure this aligns to the center */
+    width: 80%; /* Center item prominent */
+    max-width: 600px;
+    height: auto;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #000;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.media-item img,
+.media-item video {
+    width: auto;
+    height: 300px;
+    display: block;
+}
+
+.media-item.centered video {
+    opacity: 1;
+    transform: scale(1); /* Focused scale */
+}
+
+/* sign in button */
+.signin-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #4285F4; /* Google blue */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.signin-btn:hover {
+    background-color: #357AE8;
+    transform: scale(1.05);
+}
+
+.signin-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.5);
+}
+
+.signin-btn:active {
+    transform: scale(0.95);
+}
+
+

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameRec.com</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <script src="../static/front-end.js"></script>
+</head>
+<body>
+    <h1>GameRec.com</h1>
+    <button id="login-btn" class="signin-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" style="height: 16px; margin-right: 8px;">
+        Sign in with Google
+    </button>
+    <script type = module src="../static/signin.js"></script>
+    <!-- Dropdown Form -->
+    <form method="POST" id="search-form">
+        <label for="game">Search for a game:</label>
+        <input type="text" id="game" name="game" placeholder="Type to search..." autocomplete="off">
+        <div id="suggestions" class="suggestions"></div>
+    </form>
+    <script src="../static/scripts.js"></script>
+    
+    <!-- Display Recommendations -->
+    {% if not items.empty %}
+    <div id="rec" class="recommendations">  
+        <h2>Recommendations for "{{ selected_game }}":</h2>
+        <div class="recommendation-container">
+            <button class="nav left" onclick="scrollLeft()">❮</button>
+            <ul class="recommendation-list">
+                {% for index, row in items.iterrows() %}
+                <li class="recommendation-item">
+                    <img src="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{{ row['id'] }}/header.jpg" alt="{{ row['name'] }}">
+                    <a href="https://store.steampowered.com/app/{{ row['id'] }}" target="_blank">
+                        <p>{{ row['name'] }}</p>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            <button class="nav right" onclick="scrollRight()">❯</button>
+        </div>
+        
+        <div class="game-details hidden" id="game-details">
+            <h1 id="game-title"></h1>
+            <div class="media-slider" id="media-container">
+                <!-- Media items will be dynamically added here -->
+            </div>
+            <p id="game-description"></p>
+        </div>
+    {% elif selected_game %}
+        <p>No recommendations found for "{{ selected_game }}".</p>
+    </div>  
+    {% endif %}    
+</body>
+</html>
