@@ -8,14 +8,17 @@
     <script src="../static/front-end.js"></script>
 </head>
 <body>
-    <h1>GameRec.com</h1>
     <!-- Sign in section -->
-    <div id="top-right">
-        <button id="login-btn" class = "signin-btn">Sign in with Google</button>
-        <div id="user-info" style="display: none;">
-            <img id="user-icon" alt="User Icon" style="width: 40px; border-radius: 50%;" />
-            <span id="user-name"></span>
-            <button id="logout-btn">Logout</button>
+    <div id="top-right" class="auth-container">
+        <h1>GameRec.com</h1>
+        <!-- Sign-in  -->
+        <button id="login-btn" class="signin-btn">Sign in with Google</button>
+    
+        <!-- User Info  -->
+        <div id="user-info" style="display: none;" class="user-info">
+            <img id="user-icon" alt="User Icon" class="user-icon" />
+            <span id="user-name" class="user-name"></span>
+            <button id="logout-btn" class="logout-btn">Logout</button>
         </div>
     </div>
     <script type = module src="../static/signin.js"></script>
@@ -47,12 +50,14 @@
         </div>
         
         <div class="game-details hidden" id="game-details">
-            <h1 id="game-title"></h1>
-            <div class = "like-container"></div>
-            <div class="media-slider" id="media-container">
-                <!-- Media items will be dynamically added here -->
-            </div>
-            <p id="game-description"></p>
+                <div class = "game-details-top">
+                    <h1 id="game-title"></h1>
+                    <div class = "like-container"></div>
+                </div>
+                <div class="media-slider" id="media-container">
+                    <!-- Media items will be dynamically added here -->
+                </div>
+                <p id="game-description"></p>
         </div>
     {% elif selected_game %}
         <p>No recommendations found for "{{ selected_game }}".</p>

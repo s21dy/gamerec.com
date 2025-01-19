@@ -12,37 +12,34 @@ h1, h2 {
 /* Search Form */
 #search-form {
     position: relative;
-    width: 100%; 
-    max-width:700px; 
-    display: flex;
-    color:#000;
-    border: 2px solid #ccc; 
-    padding: 5px 10px; 
-    background-color: #f9f9f9; 
+    color:#f0f0f0;
+    border: 2px solid #1d1d1d; 
+    padding: 5px 15px; 
+    background-color: #333333; 
+    border-radius: 20px;
 }
 
 #search-form input[type="text"] {
-    width: 100%;
     border: none;
     outline: none;
     font-size: 16px;
     padding: 8px 10px;
     background: none; 
-    color: #333; 
+    color: #cacaca; 
     border-radius: 20px; /* Rounded for input */
 }
 
-/* Suggestions Dropdown */
+/* Search Form Suggestions Dropdown */
 .suggestions {
     position: absolute;
     top: 100%;
     left: 0;
     width: 100%;
-    border: 1px solid #ccc;
     border-top: none; 
     max-height: 200px;
     overflow-y: auto;
-    background-color: #ffffff;
+    color: #efefef;
+    background-color: #1f1f1f;
     margin-top: 5px;
     z-index: 20;
     border-radius: 0 0 20px 20px; /* Rounded bottom corners */
@@ -53,12 +50,12 @@ h1, h2 {
     padding: 10px 15px; /* More padding for a cleaner look */
     font-size: 14px;
     cursor: pointer;
-    color: #333; /* Match form text */
+    color: #c6c6c6; /* Match form text */
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .suggestion-item:hover {
-    background-color: #007bff; /* Match button hover color */
+    background-color: #7d7d7d; /* Match button hover color */
     color: white; /* White text for contrast */
 }
 .suggestions::-webkit-scrollbar {
@@ -67,10 +64,6 @@ h1, h2 {
 .suggestions::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 10px;
-}
-
-.suggestions::-webkit-scrollbar-thumb:hover {
-    background: #007bff; /* Match button color */
 }
 
 /* Navigation buttons */
@@ -88,20 +81,13 @@ h1, h2 {
     font-size: 18px;
 }
 
-.nav.left {
-    left: 10px;
-}
-
-.nav.right {
-    right: 10px;
-}
-
 /* Recommendations container */
 .recommendations {
     position: relative; 
     margin-top: 20px;
     padding: 20px;
-    background-color: #eaeaea;
+    color:#000;
+    background-color: #2b2b2b;
 }
 .recommendation-container {
     position: relative; 
@@ -109,7 +95,6 @@ h1, h2 {
     align-items: center;
     overflow-x: hidden;
 }
-
 .recommendation-list {
     display: flex;
     list-style-type: none;
@@ -119,7 +104,6 @@ h1, h2 {
     overflow-x: auto;
     scroll-behavior: smooth;
 }
-
 .recommendation-item {
     display: inline-block;
     text-wrap: auto;
@@ -127,18 +111,18 @@ h1, h2 {
     flex-shrink: 0;
     text-align: center;
 }
-
 .recommendation-item:hover {
     transform: scale(1.06);
     transition: transform 0.3s ease;
 }
-
 .recommendation-item img {
     width: 100%;
     height: auto;
     border-radius: 5px;
 }
-
+.recommendation-item a {
+    color:#4285f4
+}
 .nav.left {
     left: 10px;
 }
@@ -149,15 +133,43 @@ h1, h2 {
     background-color: rgba(255, 204, 0, 0.9); 
 }
 
-/* Game details container and list */
+/* Game details container */
+.game-details-top {
+    display: flex;
+    padding: 10px;
+    justify-content: space-between;
+}
+
 .game-details {
     display: block;
     padding: 20px;
     border: 1px solid #444;
+    color: #cacaca;
     margin-top: 20px;
     background-color: #222;
 }
 
+/* Like Container */
+.like-container {
+    display: block;
+}
+
+/* Like Button */
+.like-container button {
+    background-color: #f7c42a; /* Red theme for the like button */
+    color: rgb(60, 60, 60);
+    font-size: 14px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: Arial, sans-serif;
+}
+
+.like-container button:hover {
+    background-color: #d1ab2f; /* Darker red on hover */
+}
 
 .game-details.hidden {
     display: none;
@@ -180,6 +192,7 @@ h1, h2 {
     max-width: 600px;
     align-self: center;
 }
+
 
 /* Media slider container */
 .media-slider {
@@ -215,61 +228,73 @@ h1, h2 {
 
 .media-item.centered video {
     opacity: 1;
-    transform: scale(1); /* Focused scale */
+    transform: scale(1); 
 }
 
-/* sign in button */
+/* Top right sign in section */
+.auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    gap: 15px;
+    background-color: #000000;
+    border-bottom: 1px solid #ddd;
+}
+
 .signin-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    background-color: #4285F4; /* Google blue */
+    background-color: #4285f4; /* Google Blue */
     color: white;
+    font-size: 14px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: bold;
+    border-radius: 20px;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s, transform 0.2s;
+    transition: background-color 0.3s ease;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .signin-btn:hover {
-    background-color: #357AE8;
-    transform: scale(1.05);
+    background-color: #357ae8; /* Darker Google Blue */
 }
 
-.signin-btn:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.5);
-}
-
-.signin-btn:active {
-    transform: scale(0.95);
-}
-
-/* after-sign in  */
-#top-right {
+.user-info {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: 10px;
 }
 
-#user-icon {
+.user-icon {
     width: 40px;
     height: 40px;
     border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-#user-name {
+.user-name {
     font-size: 14px;
+    color: #333;
+    font-family: Arial, sans-serif;
     font-weight: bold;
 }
-#user-info {
-    display: none; /* Initially hidden */
-    align-items: center;
-    gap: 5px;
+
+/* Logout Button */
+.logout-btn {
+    background-color: #e84545; /* Red Logout Button */
+    color: white;
+    font-size: 14px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+.logout-btn:hover {
+    background-color: #d12f2f; /* Darker Red */
+}
+
 
