@@ -1,12 +1,15 @@
 import pandas as pd
+import os
 from flask import Flask, render_template, request, jsonify
 from recommendation import get_game_rec, p_data, similarity_matrix
 from fetch_detail import scrape_game_details
 from auth import verify_token, get_user_data, save_user_to_database
 import sqlite3
 
-app = Flask(__name__, template_folder='/Users/sandyyang/my_data_science_project/src/templates',
-            static_folder="/Users/sandyyang/my_data_science_project/src/static")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
+             static_folder=os.path.join(BASE_DIR, "static"))
 
 @app.route("/", methods=["GET", "POST"])
 def home():
