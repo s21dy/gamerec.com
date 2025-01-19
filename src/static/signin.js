@@ -21,24 +21,18 @@ document.getElementById("login-btn").addEventListener("click", () => {
         .then((result) => {
             const user = result.user;
 
-            // Optional: Send user token to Flask backend
-            user.getIdToken().then((idToken) => {
-                fetch("/api/save-user", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ idToken }),
-                })
-                    .then((response) => {
-                        if (response.ok) {
-                            console.log("User saved successfully");
-                        } else {
-                            console.error("Failed to save user");
-                        }
-                    })
-                    .catch((error) => console.error("Error:", error));
-            });
+            // Update the user icon and name
+            const userIcon = document.getElementById("user-icon");
+            const userName = document.getElementById("user-name");
+            const userInfo = document.getElementById("user-info");
+
+            // Make the user-info section visible
+            userIcon.src = user.photoURL; 
+            userName.textContent = user.displayName;
+            userInfo.style.display = "flex";
+            localStorage.setItem("userId", user.uid);
+            //Hide the login button
+            document.getElementById("login-btn").style.display = "none";
         })
         .catch((error) => {
             console.error("Error during sign-in:", error);

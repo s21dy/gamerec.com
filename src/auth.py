@@ -1,10 +1,39 @@
 import firebase_admin
 from firebase_admin import credentials, auth
 from flask import request, jsonify
+import sqlite3
+import os
 
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate("firebase-service-account.json")
 firebase_admin.initialize_app(cred)
+
+# Initialize User DB
+USER_DB_PATH = "../data/processed/user.db"
+os.makedirs(os.path.dirname(USER_DB_PATH), exist_ok=True)
+
+# Initialize the database and tables
+def initialize_database():
+    with sqlite3.connect(USER_DB_PATH) as conn:
+        cursor = conn.cursor()
+        # Create users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                uid TEXT PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL
+            )
+        ''')
+        # Create saved games table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS saved_games (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uid TEXT NOT NULL,
+                game_id TEXT NOT NULL,
+                FOREIGN KEY (uid) REFERENCES users(uid)
+            )
+        ''')
+        conn.commit()
+
 
 def verify_token(id_token):
     """
@@ -35,6 +64,19 @@ def save_user_to_database(uid, email):
     Mock function to save user data to your database.
     Replace with actual database logic.
     """
-    print(f"Saving user: {uid}, email: {email}")
-    # Implement database save logic here
-    return True
+    try:
+        with sqlite3.connect(USER_DB_PATH) as conn:
+            cursor = conn.cursor()
+            # Insert user into the users table
+            cursor.execute('''
+                INSERT OR IGNORE INTO users (uid, email)
+                VALUES (?, ?)
+            ''', (uid, email))
+            conn.commit()
+        print(f"User {email} saved to the database.")
+        return True
+    except sqlite3.Error as e:
+        print(f"Error saving user to the database: {e}")
+        return False
+    
+

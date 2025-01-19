@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, jsonify
 from recommendation import get_game_rec, p_data, similarity_matrix
 from fetch_detail import scrape_game_details
 from auth import verify_token, get_user_data, save_user_to_database
+import sqlite3
 
 app = Flask(__name__, template_folder='/Users/sandyyang/my_data_science_project/src/templates',
             static_folder="/Users/sandyyang/my_data_science_project/src/static")
@@ -69,6 +70,55 @@ def verify_user():
         "user": {"uid": uid, "email": email},
     })
 
+@app.route("/api/save-game", methods=["POST"])
+def save_game():
+    """
+    Save a liked game for the signed-in user.
+    """
+    data = request.json
+    uid = data.get("uid")
+    game_id = data.get("game_id")
+    USER_DB_PATH = "../data/processed/user.db"
+
+    if not uid or not game_id:
+        return jsonify({"error": "UID {uid} and game ID {game_id} are required"}), 400
+
+    try:
+        with sqlite3.connect(USER_DB_PATH) as conn:
+            cursor = conn.cursor()
+            # Insert liked game into saved_games table
+            cursor.execute('''
+                INSERT INTO saved_games (uid, game_id)
+                VALUES (?, ?)
+            ''', (uid, game_id))
+            conn.commit()
+        return jsonify({"message": "Game saved successfully"}), 200
+    except sqlite3.Error as e:
+        return jsonify({"error": f"Database error: {e}"}), 500
+
+@app.route("/api/get-saved-games", methods=["GET"])
+def get_saved_games():
+    """
+    Retrieve saved games for the signed-in user.
+    """
+    uid = request.args.get("uid")
+    USER_DB_PATH = "../data/processed/user.db"
+
+    if not uid:
+        return jsonify({"error": "UID is required"}), 400
+
+    try:
+        with sqlite3.connect(USER_DB_PATH) as conn:
+            cursor = conn.cursor()
+            # Fetch saved games
+            cursor.execute('''
+                SELECT game_id FROM saved_games
+                WHERE uid = ?
+            ''', (uid,))
+            games = cursor.fetchall()
+        return jsonify({"saved_games": [game[0] for game in games]}), 200
+    except sqlite3.Error as e:
+        return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)

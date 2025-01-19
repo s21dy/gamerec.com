@@ -9,10 +9,14 @@
 </head>
 <body>
     <h1>GameRec.com</h1>
-    <button id="login-btn" class="signin-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" style="height: 16px; margin-right: 8px;">
-        Sign in with Google
-    </button>
+    <!-- Sign in section -->
+    <div id="top-right">
+        <button id="login-btn" class = "signin-btn">Sign in with Google</button>
+        <div id="user-info" style="display: none;">
+            <img id="user-icon" alt="User Icon" style="width: 40px; border-radius: 50%;" />
+            <span id="user-name"></span>
+        </div>
+    </div>
     <script type = module src="../static/signin.js"></script>
     <!-- Dropdown Form -->
     <form method="POST" id="search-form">
@@ -43,6 +47,7 @@
         
         <div class="game-details hidden" id="game-details">
             <h1 id="game-title"></h1>
+            <button class="like-btn">❤️ Like</button>
             <div class="media-slider" id="media-container">
                 <!-- Media items will be dynamically added here -->
             </div>

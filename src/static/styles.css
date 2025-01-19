@@ -38,7 +38,6 @@ h1, h2 {
 
 
 /* Navigation buttons */
-/* Navigation buttons */
 .nav {
     position: absolute;
     top: 50%;
@@ -214,4 +213,27 @@ h1, h2 {
     transform: scale(0.95);
 }
 
+/* after-sign in  */
+#top-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+#user-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+#user-name {
+    font-size: 14px;
+    font-weight: bold;
+}
+#user-info {
+    display: none; /* Initially hidden */
+    align-items: center;
+    gap: 5px;
+}
 

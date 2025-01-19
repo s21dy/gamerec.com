@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 //Event Listener for game detail section
 document.addEventListener("DOMContentLoaded", () => {
+    const userId = localStorage.getItem("userId"); // Retrieve userId from localStorage
     const gameDetails = document.getElementById("game-details");
     const gameTitle = document.getElementById("game-title");
     const gameDescription = document.getElementById("game-description");
@@ -127,6 +128,31 @@ document.addEventListener("DOMContentLoaded", () => {
         return currentIndex;
     };
 
+    function attachLikeButtonListeners(gameId) {
+        const likeButtons = document.querySelectorAll(".like-btn");
+        likeButtons.forEach((button) => {
+            button.addEventListener("click", (event) => {
+
+                fetch("/api/save-game", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ uid: userId, game_id: gameId }),
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.message) {
+                            event.target.textContent = "❤️ Liked";
+                        } else {
+                            console.error(data.error);
+                        }
+                    })
+                    .catch((error) => console.error("Error saving liked game:", error));
+            });
+        });
+    }
+
     // Optimized function to load game details and media content
     const loadGameDetails = (gameId) => {
         gameTitle.textContent = "";
@@ -141,7 +167,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Update game details
                 gameTitle.textContent = data.name;
                 gameDescription.innerHTML = data.detailed_description;
-
+                attachLikeButtonListeners(gameId);
+                
                 // Populate media content
                 data.media.forEach((media) => {
                     const mediaItem = createMediaElement(media);
@@ -154,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let currentIndex = realItemsStartIndex;
 
                 updateCenterState(mediaItems, currentIndex); // Center the first real item
-
+                
                 // Show the slider after centering
                 mediaContainer.style.visibility = "visible";
 
