@@ -71,7 +71,7 @@ def verify_user():
     })
 
 @app.route("/api/add-game", methods=["POST"])
-def save_game():
+def add_game():
     """
     Save a liked game for the signed-in user.
     """
@@ -117,6 +117,31 @@ def get_saved_games():
             ''', (uid,))
             games = cursor.fetchall()
         return jsonify({"saved_games": [game[0] for game in games]}), 200
+    except sqlite3.Error as e:
+        return jsonify({"error": f"Database error: {e}"}), 500
+
+@app.route("/api/remove-game", methods=["DELETE"])
+def remove_liked_game():
+    """
+    Remove a liked game for the signed-in user.
+    """
+    data = request.json
+    uid = data.get("uid")
+    game_id = data.get("game_id")
+    USER_DB_PATH = "../data/processed/user.db"
+
+    if not uid or not game_id:
+        return jsonify({"error": "UID and game ID are required"}), 400
+
+    try:
+        with sqlite3.connect(USER_DB_PATH) as conn:
+            cursor = conn.cursor()
+            # Remove the liked game
+            cursor.execute('''
+                DELETE FROM saved_games WHERE uid = ? AND game_id = ?
+            ''', (uid, game_id))
+            conn.commit()
+        return jsonify({"message": "Game unliked successfully"}), 200
     except sqlite3.Error as e:
         return jsonify({"error": f"Database error: {e}"}), 500
 

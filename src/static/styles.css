@@ -9,33 +9,69 @@ h1, h2 {
     color: #ffcc00; /* Gold accent for titles */
 }
 
+/* Search Form */
 #search-form {
     position: relative;
+    width: 100%; 
+    max-width:700px; 
+    display: flex;
+    color:#000;
+    border: 2px solid #ccc; 
+    padding: 5px 10px; 
+    background-color: #f9f9f9; 
 }
 
+#search-form input[type="text"] {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    padding: 8px 10px;
+    background: none; 
+    color: #333; 
+    border-radius: 20px; /* Rounded for input */
+}
+
+/* Suggestions Dropdown */
 .suggestions {
-    position: absolute; 
-    color:#000;
+    position: absolute;
     top: 100%;
     left: 0;
-    width: 100%; 
-    border: 1px solid #ddd;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-top: none; 
     max-height: 200px;
     overflow-y: auto;
-    background-color: white;
+    background-color: #ffffff;
     margin-top: 5px;
     z-index: 20;
+    border-radius: 0 0 20px 20px; /* Rounded bottom corners */
 }
 
+/* Suggestion Item */
 .suggestion-item {
-    padding: 5px;
+    padding: 10px 15px; /* More padding for a cleaner look */
+    font-size: 14px;
     cursor: pointer;
+    color: #333; /* Match form text */
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .suggestion-item:hover {
-    background-color: #f0f0f0;
+    background-color: #007bff; /* Match button hover color */
+    color: white; /* White text for contrast */
+}
+.suggestions::-webkit-scrollbar {
+    width: 8px;
+}
+.suggestions::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
 }
 
+.suggestions::-webkit-scrollbar-thumb:hover {
+    background: #007bff; /* Match button color */
+}
 
 /* Navigation buttons */
 .nav {

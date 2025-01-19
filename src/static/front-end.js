@@ -35,7 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameTitle = document.getElementById("game-title");
     const gameDescription = document.getElementById("game-description");
     const mediaContainer = document.getElementById("media-container");
-
+    const likeContainer = document.querySelector(".like-container");
+    
     let autoSlideInterval;
 
     // Helper function to create media elements
@@ -125,9 +126,9 @@ document.addEventListener("DOMContentLoaded", () => {
         updateCenterState(mediaItems, currentIndex);
         return currentIndex;
     };
-
+    
     function attachLikeButtonListeners(gameId) {
-        const userId = localStorage.getItem("userId"); // Retrieve userId from localStorage
+        const userId = localStorage.getItem("userId");
     
         if (!userId) {
             console.warn("User not signed in. Redirecting to Google Sign-In...");
@@ -135,76 +136,89 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
     
-        // Try to get liked games from localStorage
-        let likedGames = JSON.parse(localStorage.getItem("likedGames")) || [];
+        // Fetch the latest likedGames from localStorage
+        const likedGames = JSON.parse(localStorage.getItem("likedGames")) || [];
     
-        // Fetch liked games from the backend if not cached
-        if (likedGames.length === 0) {
-            fetch(`/api/get-saved-games?uid=${userId}`)
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.saved_games) {
-                        likedGames = data.saved_games.map((game) => game.game_id); // Extract liked game IDs
-                        localStorage.setItem("likedGames", JSON.stringify(likedGames)); // Cache liked games
-                    }
-                    updateLikeButton(gameId, likedGames);
-                })
-                .catch((error) => console.error("Error fetching liked games:", error));
-        } else {
-            updateLikeButton(gameId, likedGames);
-        }
+        // Update the button based on the latest cache
+        updateLikeButton(gameId, userId);
     }
-    
-    function updateLikeButton(gameId, likedGames) {
+
+    function updateLikeButton(gameId, userId) {
         const likeContainer = document.querySelector(".like-container");
     
-        // Clear and create the like button
+        if (!likeContainer) {
+            console.error("Error: .like-container element not found.");
+            return;
+        }
+    
+        // Fetch the latest likedGames from localStorage
+        const likedGames = JSON.parse(localStorage.getItem("likedGames")) || [];
+    
+        // Clear the container's content
         likeContainer.innerHTML = "";
+    
+        // Create the like button
         const likeButton = document.createElement("button");
         likeButton.classList.add("like-btn");
         likeButton.dataset.gameId = gameId;
     
-        // Set button text and state based on liked state
-        if (likedGames.includes(gameId)) {
-            likeButton.textContent = "❤️ Already in your list";
-            likeButton.disabled = true;
-        } else {
-            likeButton.textContent = "❤️ Like";
-        }
+        // Check if the game is liked
+        const isLiked = likedGames.includes(gameId.toString());
+        likeButton.textContent = isLiked ? "❤️ Already in your list" : "❤️ Like";
+        likeButton.dataset.liked = isLiked.toString();
     
-        // Attach click listener
+        // Attach click listener for toggling like/unlike
         likeButton.addEventListener("click", (event) => {
-            if (likedGames.includes(gameId)) {
-                console.log(`Game ${gameId} is already liked.`);
-                return;
-            }
+            const currentState = event.target.dataset.liked === "true";
     
-            const userId = localStorage.getItem("userId");
-            fetch("/api/add-game", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ uid: userId, game_id: gameId }),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.message) {
-                        console.log(`Game ${gameId} liked successfully.`);
-                        event.target.textContent = "❤️ This game is added to your list";
-                        event.target.disabled = true;
-                        likedGames.push(gameId); // Update local cache
-                        localStorage.setItem("likedGames", JSON.stringify(likedGames));
-                    }
+            toggleLikeState(currentState, userId, gameId)
+                .then(() => {
+                    // Refresh the button dynamically after toggling the state
+                    updateLikeButton(gameId, userId);
                 })
-                .catch((error) => console.error("Error saving liked game:", error));
+                .catch((error) => console.error("Error toggling like state:", error));
         });
     
         likeContainer.appendChild(likeButton);
-    }    
+    }
+
+    function toggleLikeState(isLiked, userId, gameId) {
+        const endpoint = isLiked ? "/api/remove-game" : "/api/add-game";
+        const method = isLiked ? "DELETE" : "POST";
+    
+        return fetch(endpoint, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uid: userId, game_id: gameId }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.message) {
+                    const likedGames = JSON.parse(localStorage.getItem("likedGames")) || [];
+                    if (isLiked) {
+                        // Remove the game from likedGames
+                        console.log("Remove: ", gameId)
+                        const index = likedGames.indexOf(gameId.toString());
+                        if (index !== -1) likedGames.splice(index, 1);
+                    } else {
+                        // Add the game to likedGames
+                        console.log("Add: ", gameId)
+                        likedGames.push(gameId.toString());
+                    }
+                    localStorage.setItem("likedGames", JSON.stringify(likedGames));
+                } else {
+                    console.error(data.error);
+                    throw new Error(data.error);
+                }
+            });
+    }
+    
     // Optimized function to load game details and media content
     const loadGameDetails = (gameId) => {
         gameTitle.textContent = "";
         gameDescription.innerHTML = "";
-        mediaContainer.innerHTML = ""; // Clear previous media content
+        mediaContainer.innerHTML = ""; 
+        likeContainer.innerHTML= "";
 
         mediaContainer.style.visibility = "hidden"; // Hide the slider temporarily
 
@@ -214,7 +228,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Update game details
                 gameTitle.textContent = data.name;
                 gameDescription.innerHTML = data.detailed_description;
-                attachLikeButtonListeners(gameId);
+                
+                const userId = localStorage.getItem("userId");
+                if (userId) {
+                    attachLikeButtonListeners(gameId); // Only set up like buttons if signed in
+                } else {
+                    // Clear like container or show "Sign in to like" message
+                    likeContainer.innerHTML = "<p>Sign in to save game.</p>";
+                }
                 
                 // Populate media content
                 data.media.forEach((media) => {
