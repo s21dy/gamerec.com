@@ -2,14 +2,12 @@ __pycache__/
 *.pyc
 venv/
 *.ipynb_checkpoints/
-data/
 .env/
-notebooks/
-src/notebooks/
 .DS_Store
-src/firebase-service-account.jsonvenv/
+notebooks/
+data/
 data/processed/process_game.db
 data/raw/steam_games.csv
-notebooks/
 src/firebase-service-account.json
+src/notebooks/
 src/cache
