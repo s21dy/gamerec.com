@@ -12,3 +12,4 @@ data/processed/process_game.db
 data/raw/steam_games.csv
 notebooks/
 src/firebase-service-account.json
+src/cache
