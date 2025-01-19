@@ -29,10 +29,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelector('.nav.right').addEventListener('click', scrollRight);
 });
 
-
 //Event Listener for game detail section
 document.addEventListener("DOMContentLoaded", () => {
-    const userId = localStorage.getItem("userId"); // Retrieve userId from localStorage
     const gameDetails = document.getElementById("game-details");
     const gameTitle = document.getElementById("game-title");
     const gameDescription = document.getElementById("game-description");
@@ -129,30 +127,79 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     function attachLikeButtonListeners(gameId) {
-        const likeButtons = document.querySelectorAll(".like-btn");
-        likeButtons.forEach((button) => {
-            button.addEventListener("click", (event) => {
-
-                fetch("/api/save-game", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ uid: userId, game_id: gameId }),
+        const userId = localStorage.getItem("userId"); // Retrieve userId from localStorage
+    
+        if (!userId) {
+            console.warn("User not signed in. Redirecting to Google Sign-In...");
+            document.getElementById("login-btn").click();
+            return;
+        }
+    
+        // Try to get liked games from localStorage
+        let likedGames = JSON.parse(localStorage.getItem("likedGames")) || [];
+    
+        // Fetch liked games from the backend if not cached
+        if (likedGames.length === 0) {
+            fetch(`/api/get-saved-games?uid=${userId}`)
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.saved_games) {
+                        likedGames = data.saved_games.map((game) => game.game_id); // Extract liked game IDs
+                        localStorage.setItem("likedGames", JSON.stringify(likedGames)); // Cache liked games
+                    }
+                    updateLikeButton(gameId, likedGames);
                 })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if (data.message) {
-                            event.target.textContent = "❤️ Liked";
-                        } else {
-                            console.error(data.error);
-                        }
-                    })
-                    .catch((error) => console.error("Error saving liked game:", error));
-            });
-        });
+                .catch((error) => console.error("Error fetching liked games:", error));
+        } else {
+            updateLikeButton(gameId, likedGames);
+        }
     }
-
+    
+    function updateLikeButton(gameId, likedGames) {
+        const likeContainer = document.querySelector(".like-container");
+    
+        // Clear and create the like button
+        likeContainer.innerHTML = "";
+        const likeButton = document.createElement("button");
+        likeButton.classList.add("like-btn");
+        likeButton.dataset.gameId = gameId;
+    
+        // Set button text and state based on liked state
+        if (likedGames.includes(gameId)) {
+            likeButton.textContent = "❤️ Already in your list";
+            likeButton.disabled = true;
+        } else {
+            likeButton.textContent = "❤️ Like";
+        }
+    
+        // Attach click listener
+        likeButton.addEventListener("click", (event) => {
+            if (likedGames.includes(gameId)) {
+                console.log(`Game ${gameId} is already liked.`);
+                return;
+            }
+    
+            const userId = localStorage.getItem("userId");
+            fetch("/api/add-game", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uid: userId, game_id: gameId }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.message) {
+                        console.log(`Game ${gameId} liked successfully.`);
+                        event.target.textContent = "❤️ This game is added to your list";
+                        event.target.disabled = true;
+                        likedGames.push(gameId); // Update local cache
+                        localStorage.setItem("likedGames", JSON.stringify(likedGames));
+                    }
+                })
+                .catch((error) => console.error("Error saving liked game:", error));
+        });
+    
+        likeContainer.appendChild(likeButton);
+    }    
     // Optimized function to load game details and media content
     const loadGameDetails = (gameId) => {
         gameTitle.textContent = "";

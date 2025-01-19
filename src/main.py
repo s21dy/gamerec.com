@@ -70,7 +70,7 @@ def verify_user():
         "user": {"uid": uid, "email": email},
     })
 
-@app.route("/api/save-game", methods=["POST"])
+@app.route("/api/add-game", methods=["POST"])
 def save_game():
     """
     Save a liked game for the signed-in user.

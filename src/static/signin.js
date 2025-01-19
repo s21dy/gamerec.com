@@ -15,27 +15,48 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// Handle Google Sign-In
-document.getElementById("login-btn").addEventListener("click", () => {
-    signInWithPopup(auth, provider)
-        .then((result) => {
-            const user = result.user;
+document.addEventListener("DOMContentLoaded", function () {
+    const userId = localStorage.getItem("userId"); 
 
-            // Update the user icon and name
-            const userIcon = document.getElementById("user-icon");
-            const userName = document.getElementById("user-name");
-            const userInfo = document.getElementById("user-info");
+    // Function to update the UI based on user login status
+    function updateUIForUser(userId) {
+        const loginBtn = document.getElementById("login-btn");
+        const userIcon = document.getElementById("user-icon");
+        const userName = document.getElementById("user-name");
+        const userInfo = document.getElementById("user-info");
 
-            // Make the user-info section visible
-            userIcon.src = user.photoURL; 
-            userName.textContent = user.displayName;
+        if (userId) {
+            // User is signed in, hide login button and show user info
+            loginBtn.style.display = "none";
+            userIcon.src = localStorage.getItem("userPhotoURL") || ""; 
+            userName.textContent = localStorage.getItem("userName") || ""; 
             userInfo.style.display = "flex";
-            localStorage.setItem("userId", user.uid);
-            //Hide the login button
-            document.getElementById("login-btn").style.display = "none";
-        })
-        .catch((error) => {
-            console.error("Error during sign-in:", error);
-        });
-});
+        } else {
+            // User is not signed in, show login button and hide user info
+            loginBtn.style.display = "block";
+            userInfo.style.display = "none";
+        }
+    }
 
+    // Call updateUIForUser on page load
+    updateUIForUser(userId);
+
+    // Handle Google Sign-In
+    document.getElementById("login-btn").addEventListener("click", () => {
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                const user = result.user;
+
+                // Save user data in localStorage
+                localStorage.setItem("userId", user.uid);
+                localStorage.setItem("userName", user.displayName);
+                localStorage.setItem("userPhotoURL", user.photoURL);
+
+                // Update the UI after sign-in
+                updateUIForUser(user.uid);
+            })
+            .catch((error) => {
+                console.error("Error during sign-in:", error);
+            });
+    });
+});
