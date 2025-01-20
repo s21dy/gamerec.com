@@ -1,10 +1,11 @@
-import os
+import psutil, os
 import pandas as pd
 from flask import Flask, render_template, request, jsonify
-from recommendation import p_data, get_game_rec
+from recommendation import get_game_rec
 from fetch_detail import scrape_game_details
 from auth import verify_token, save_user_to_database
 from sqlalchemy import create_engine, text
+from scipy.sparse import load_npz
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +18,20 @@ USER_DB_PATH = os.getenv(
     )
 engine = create_engine(USER_DB_PATH, pool_size=10, max_overflow=20)
 
+GAMES_DB_PATH = os.getenv(
+    "GAMES_DB_PATH", 
+    "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
+    )
+game_engine = create_engine(GAMES_DB_PATH, pool_size=10, max_overflow=20)
+
+p_data = None
+
+def get_p_data():
+    global p_data
+    if p_data is None:
+        query = "SELECT id, name FROM processed_game"
+        p_data = pd.read_sql_query(query, con=game_engine)
+    return p_data
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
              static_folder=os.path.join(BASE_DIR, "static"))
@@ -25,14 +40,14 @@ app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
 def home():
      selected_game = []
      items = pd.DataFrame()
-     
+          
      # Handle POST request when the user selects a game
      if request.method == "POST":
         selected_game = request.form.get("game") 
-        items = items = get_game_rec(selected_game, p_data, SIMILARITY_MATRIX_PATH)
+        items = get_game_rec(selected_game, get_p_data())
 
       # Get the game name from query parameters
-     game_list = p_data['name'].unique().tolist()
+     game_list = get_p_data()['name'].unique().tolist()
      return render_template("index.html", 
                             games=game_list, 
                             items= items,
@@ -40,7 +55,8 @@ def home():
 
 @app.route("/get-games", methods=["GET"])
 def get_games():
-    games = p_data['name'].unique().tolist()
+    process = psutil.Process(os.getpid())
+    games = get_p_data()['name'].unique().tolist()
     return jsonify(games)
 
 @app.route("/get-game-details", methods=["GET"])

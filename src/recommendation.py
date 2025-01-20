@@ -1,9 +1,8 @@
 # Data Preporcess
 import os
-import pandas as pd
 import numpy as np
-from sqlalchemy import create_engine
-from scipy.sparse import csr_matrix, hstack, save_npz, load_npz
+from scipy.sparse import csr_matrix, load_npz, save_npz, hstack
+from sqlalchemy import create_engine, text
 
 #Recommendation
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -18,22 +17,7 @@ engine = create_engine(GAMES_DB_PATH, pool_size=10, max_overflow=20)
 
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
-
-# Load Dataset
-def load_data():
-    query = "SELECT * FROM processed_game ORDER BY id"
-    data = pd.read_sql_query(query, con=engine)
-    
-    # Optimize memory usage
-    data = data.dropna(subset=['all_reviews', 'genre', 'recent_reviews', 'popular_tags'])
-    data = data.reset_index(drop=True)
-    
-    data['id'] = data['id'].astype(int)
-    data['all_reviews'] = data['all_reviews'].astype(str)
-    data['genre'] = data['genre'].astype(str)
-    data['recent_reviews'] = data['recent_reviews'].astype(str)
-    data['popular_tags'] = data['popular_tags'].astype(str)
-    return data
+similarity_matrix = None
 
 # Text Preprocessing
 def preprocess_text(text):
@@ -81,6 +65,11 @@ def compute_similarity_matrix(data, weights=None, top_k=30, n_components=200):
     sparse_matrix = csr_matrix((values, (rows, cols)), shape=(data.shape[0], data.shape[0]))
     return sparse_matrix
     
+def get_similarity_matrix():
+    global similarity_matrix
+    if similarity_matrix is None:
+        similarity_matrix = load_npz(SIMILARITY_MATRIX_PATH)
+    return similarity_matrix 
     
 def save_similarity_matrix(matrix):
     """Save the similarity matrix in sparse .npz format."""
@@ -103,7 +92,7 @@ def load_similarity_matrix(data):
 
     # Load the matrix from the .npz file
     print("Loading similarity matrix from file...")
-    matrix = load_npz(SIMILARITY_MATRIX_PATH)
+    matrix = get_similarity_matrix()
 
     # Check if the matrix fits the data row count
     if matrix.shape[0] != len(data):
@@ -117,7 +106,7 @@ def load_similarity_matrix(data):
     return matrix
 
 # Recommendation function
-def get_game_rec(selected_game, data, similarity_matrix_path, top_n=15):
+def get_game_rec(selected_game, data, top_n=15):
     """
     Recommend games based on the selected game.
     Args:
@@ -131,7 +120,7 @@ def get_game_rec(selected_game, data, similarity_matrix_path, top_n=15):
     try:
         # Find the index of the selected game
         game_index = data[data['name'] == selected_game].index[0]
-        similarity_matrix = load_npz(similarity_matrix_path)
+        similarity_matrix = get_similarity_matrix()
 
         game_similarities = similarity_matrix[game_index].toarray().flatten()        
         similar_games = sorted(enumerate(game_similarities), key=lambda x: x[1], reverse=True)
@@ -140,9 +129,7 @@ def get_game_rec(selected_game, data, similarity_matrix_path, top_n=15):
         return data.iloc[recommended_indices]   
     
     except IndexError:
-        return pd.DataFrame({'Error': [f"'{selected_game}' not found in the dataset."]})
+        return ValueError(f"'{selected_game}' not found in the dataset.")
     except Exception as e:
-        return pd.DataFrame({'Error': [str(e)]})
+        return RuntimeError(f"Error during recommendation: {e}")
 
-p_data = load_data()
-similarity_matrix = load_similarity_matrix(p_data)
