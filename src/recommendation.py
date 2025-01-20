@@ -2,134 +2,151 @@
 import os
 import pandas as pd
 import numpy as np
-from scipy.sparse import csr_matrix, load_npz, save_npz, hstack
+import faiss
 from sqlalchemy import create_engine, text
 
 #Recommendation
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import TruncatedSVD
+from scipy.sparse import csr_matrix, load_npz, save_npz, hstack
 
-GAMES_DB_PATH = os.getenv(
-    "GAMES_DB_PATH", 
-    "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
-    )
-engine = create_engine(GAMES_DB_PATH, pool_size=10, max_overflow=20)
 
-SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
-os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
-similarity_matrix = None
+class GameRecommender:
+    def __init__(self, db_engine, similarity_matrix_path, top_k=30, n_components=200):
+        self.db_engine = db_engine
+        self.similarity_matrix_path = similarity_matrix_path
+        self.top_k = top_k
+        self.n_components = n_components
+        self.dataset = None
+        self.similarity_matrix = None
 
-# Text Preprocessing
-def preprocess_text(text):
-    """Preprocess text data by cleaning and removing unnecessary characters."""
-    return ' '.join(text.split()).lower()
+    def load_dataset(self, chunk_size=1000):
+        if self.dataset is not None:
+            print("Dataset already loaded. Skipping reload.")
+            return self.dataset
 
-def reduce_dimensions(matrix, n_components=200):
-    svd = TruncatedSVD(n_components=n_components, n_iter=3, random_state=42)
-    reduced_matrix = svd.fit_transform(matrix)
-    return csr_matrix(reduced_matrix)
+        # Count rows for batching
+        count_query = "SELECT COUNT(*) FROM processed_game WHERE all_reviews IS NOT NULL AND genre IS NOT NULL AND popular_tags IS NOT NULL AND recent_reviews IS NOT NULL"
+        total_rows = pd.read_sql_query(count_query, con=self.db_engine).iloc[0, 0]
 
-# Compute Similarity Matrix
-def compute_similarity_matrix(data, weights=None, top_k=30, n_components=200):
-    if weights is None:
-        weights = {'all_reviews': 0.3, 'genre': 0.1, 
-                   'recent_reviews': 0.4, 'popular_tags': 0.2}
+        # Fetch in chunks
+        dataset_chunks = []
+        for offset in range(0, total_rows, chunk_size):
+            query = f"""
+            SELECT id, name, all_reviews, genre, popular_tags, recent_reviews
+            FROM processed_game
+            WHERE all_reviews IS NOT NULL
+            AND genre IS NOT NULL
+            AND popular_tags IS NOT NULL
+            AND recent_reviews IS NOT NULL
+            ORDER BY id
+            OFFSET {offset} LIMIT {chunk_size};
+            """
+            chunk = pd.read_sql_query(query, con=self.db_engine)
+            dataset_chunks.append(chunk)
 
-    vectorizer = TfidfVectorizer(
-        stop_words='english',
-        ngram_range=(1, 2),  # Unigrams and bigrams
-        max_features=10000,
-        max_df=0.8,
-        min_df=0.02)
-    
-    vectors = []
-    for column, weight in weights.items():
-        tfidf_matrix = vectorizer.fit_transform(data[column].apply(preprocess_text))
-        weighted_matrix = tfidf_matrix * weight
-        vectors.append(weighted_matrix)
+        # Combine chunks
+        self.dataset = pd.concat(dataset_chunks, ignore_index=True)
 
-    combined_matrix = hstack(vectors, format='csr') # Combine all vectors into one matrix
+        # Optimize types
+        self.dataset['genre'] = self.dataset['genre'].astype('category')
+        self.dataset['popular_tags'] = self.dataset['popular_tags'].astype('category')
+        print(f"Dataset loaded. Size: {len(self.dataset)} rows.")
+        return self.dataset
 
-    # Dimensionality Reduction with UMAP
-    reduced_matrix = reduce_dimensions(combined_matrix, n_components=100)
-    similarity = cosine_similarity(reduced_matrix, dense_output=False)
-    
-    # Retain only the top-k similarities for each row
-    rows, cols, values = [], [], []
-    for row_idx in range(similarity.shape[0]):
-        row = similarity.getrow(row_idx).toarray().flatten()
-        top_indices =  np.argpartition(row, -top_k)[-top_k:]  # Get top-k indices (excluding self)
-        rows.extend([row_idx] * len(top_indices))  # Row indices
-        cols.extend(top_indices)                  # Column indices
-        values.extend(row[top_indices])           
-    sparse_matrix = csr_matrix((values, (rows, cols)), shape=(data.shape[0], data.shape[0]))
-    return sparse_matrix
-    
-def get_similarity_matrix():
-    global similarity_matrix
-    if similarity_matrix is None:
-        if not os.path.exists(SIMILARITY_MATRIX_PATH):
-            raise FileNotFoundError(f"Similarity matrix not found at {SIMILARITY_MATRIX_PATH}")
-        similarity_matrix = load_npz(SIMILARITY_MATRIX_PATH)
-    return similarity_matrix 
-    
-def save_similarity_matrix(matrix):
-    """Save the similarity matrix in sparse .npz format."""
-    save_npz(SIMILARITY_MATRIX_PATH, matrix)
-    print("Similarity matrix saved as similarity_matrix.npz.")
+    def compute_similarity_matrix(self):
+        
+        """Compute the similarity matrix using FAISS."""
+        if self.dataset is None:
+            raise ValueError("Dataset is not loaded. Call `load_dataset()` first.")
 
-# Load Similarity Matrix
-def load_similarity_matrix(data):
-    """
-    Load the similarity matrix from a .npz file.
-    If the file does not exist, compute and save the matrix.
-    """
-    if not os.path.exists(SIMILARITY_MATRIX_PATH):
-        print("Similarity matrix file not found. Computing similarity matrix...")
-        # Compute and save the similarity matrix
-        matrix = compute_similarity_matrix(data)
-        save_similarity_matrix(matrix)
-        print("Similarity matrix computed and saved.")
-        return matrix
+        # Compute weighted TF-IDF vectors
+        weights = {'all_reviews': 0.3, 'genre': 0.1, 'recent_reviews': 0.4, 'popular_tags': 0.2}
+        vectorizer = TfidfVectorizer(stop_words='english', max_features=20000)
+        vectors = []
+        for column, weight in weights.items():
+            tfidf_matrix = vectorizer.fit_transform(self.dataset[column].apply(self.preprocess_text))
+            weighted_matrix = tfidf_matrix * weight
+            vectors.append(weighted_matrix)
+        combined_matrix = hstack(vectors).toarray()
 
-    # Load the matrix from the .npz file
-    print("Loading similarity matrix from file...")
-    matrix = get_similarity_matrix()
+        # Dimensionality Reduction
+        reduced_matrix = TruncatedSVD(n_components=self.n_components, random_state=42).fit_transform(combined_matrix)
+        reduced_matrix = reduced_matrix.astype('float32')
+        
+        # FAISS Index for Similarity Search
+        index = faiss.IndexFlatIP(self.n_components)
+        print(f"reduced_matrix dtype: {reduced_matrix.dtype}, shape: {reduced_matrix.shape}")
 
-    # Check if the matrix fits the data row count
-    if matrix.shape[0] != len(data):
-        print("Mismatch detected between similarity matrix and dataset rows. Recomputing matrix...")
-        matrix = compute_similarity_matrix(data)
-        save_similarity_matrix(matrix)
-        print("Updated similarity matrix saved.")
-        return matrix
-    
-    print("Similarity matrix loaded and validated.")
-    return matrix
+        faiss.normalize_L2(reduced_matrix)
+        index.add(reduced_matrix)
 
-# Recommendation function
-def get_game_rec(selected_game, data, top_n=15):
-    """
-    Recommend games based on the selected game.
-    Args:
-        selected_game (str): Name of the selected game.
-        data (pd.DataFrame): Game data with names and other attributes.
-        similarity_matrix (scipy.sparse.csr_matrix): Precomputed similarity matrix.
-        top_n (int): Number of recommendations to return. 
-    Returns:
-        pd.Series: Recommended game names.
-    """
-    try:
-        game_index = data[data['name'] == selected_game].index[0]
-        similarity_matrix = get_similarity_matrix()
-        game_similarities = similarity_matrix[game_index].toarray().flatten()
-        similar_games = sorted(enumerate(game_similarities), key=lambda x: x[1], reverse=True)
-        recommended_indices = [i[0] for i in similar_games[1:top_n + 1]]
-        return data.iloc[recommended_indices]
-    except IndexError:
-        print(f"Game '{selected_game}' not found.")
-        return pd.DataFrame({'Error': [f"'{selected_game}' not found in the dataset."]})
-    except Exception as e:
-        print(f"Error in recommendation: {e}")
-        return pd.DataFrame({'Error': [f"An error occurred: {e}"]})
+        # Query Top-K Neighbors
+        distances, indices = index.search(reduced_matrix, self.top_k)
+        rows, cols, values = [], [], []
+        for row_idx, (dist, idx) in enumerate(zip(distances, indices)):
+            rows.extend([row_idx] * len(idx))
+            cols.extend(idx)
+            values.extend(dist)
+
+        self.similarity_matrix = csr_matrix((values, (rows, cols)), shape=(self.dataset.shape[0], self.dataset.shape[0]))
+        return self.similarity_matrix
+
+    def load_similarity_matrix(self):
+        """Load or compute the similarity matrix."""
+        if self.similarity_matrix is not None:
+            print("Similarity matrix already loaded. Skipping reload.")
+            return self.similarity_matrix
+        
+        # Ensure the dataset is loaded
+        if self.dataset is None:
+            print("Dataset is not loaded. Loading dataset...")
+            self.load_dataset()
+            print(f"Dataset loaded. Size: {len(self.dataset)} rows.")
+
+        # Check if the file exists
+        if os.path.exists(self.similarity_matrix_path):
+            print(f"Loading similarity matrix from file: {self.similarity_matrix_path}")
+            self.similarity_matrix = load_npz(self.similarity_matrix_path)
+        else:
+            print("Similarity matrix file not found. Computing new similarity matrix...")
+            self.similarity_matrix = self.compute_similarity_matrix()
+            self.save_similarity_matrix()
+
+        # Verify consistency
+        if self.similarity_matrix.shape[0] != len(self.dataset):
+            print("Matrix row count does not match dataset row count. Recomputing matrix...")
+            self.similarity_matrix = self.compute_similarity_matrix()
+            self.save_similarity_matrix()
+        else:
+            print("Matrix loaded successfully and is consistent with dataset.")
+
+        return self.similarity_matrix
+
+    def save_similarity_matrix(self):
+        """Save the similarity matrix to a file."""
+        save_npz(self.similarity_matrix_path, self.similarity_matrix)
+        print(f"Similarity matrix saved to {self.similarity_matrix_path}.")
+
+    def get_recommendations(self, selected_game, top_n=15):
+        """Get game recommendations for the selected game."""
+        if self.dataset is None or self.similarity_matrix is None:
+            raise ValueError("Dataset or similarity matrix is not initialized.")
+
+        try:
+            game_index = self.dataset[self.dataset['name'] == selected_game].index[0]
+            game_similarities = self.similarity_matrix[game_index].toarray().flatten()
+            top_indices = np.argpartition(game_similarities, -top_n)[-top_n:]
+            recommended_indices = top_indices[np.argsort(-game_similarities[top_indices])]
+            return self.dataset.iloc[recommended_indices]
+        except IndexError:
+            return pd.DataFrame({'Error': [f"'{selected_game}' not found in the dataset."]})
+        except Exception as e:
+            return pd.DataFrame({'Error': [f"An error occurred: {e}"]})
+
+    @staticmethod
+    def preprocess_text(text):
+        """Preprocess text data."""
+        if not isinstance(text, str):
+            return ""  # Convert invalid types to empty string
+        return ' '.join(text.split()).lower()

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from flask import Flask, render_template, request, jsonify
-from recommendation import get_game_rec
+from recommendation import GameRecommender
 from fetch_detail import scrape_game_details
 from auth import verify_token, save_user_to_database
 from sqlalchemy import create_engine, text
@@ -21,14 +21,22 @@ GAMES_DB_PATH = os.getenv(
     )
 game_engine = create_engine(GAMES_DB_PATH, pool_size=10, max_overflow=20)
 
-p_data = None
+SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
+os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
-def get_p_data():
-    global p_data
-    if p_data is None:
-        query = text("SELECT id, name FROM processed_game ORDER BY id")
-        p_data = pd.read_sql_query(query, con=game_engine)
-    return p_data
+# Initialize Recommender
+recommender = GameRecommender(
+    db_engine=game_engine,
+    similarity_matrix_path=SIMILARITY_MATRIX_PATH,
+    top_k=30,
+    n_components=200
+)
+try:
+    recommender.load_dataset()
+    recommender.load_similarity_matrix()
+except Exception as e:
+    print(f"Initialization failed: {e}")
+    raise
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
              static_folder=os.path.join(BASE_DIR, "static"))
@@ -37,12 +45,12 @@ app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
 def home():
      selected_game = []
      items = pd.DataFrame()
-     game_list = get_p_data()['name'].unique().tolist()
+     game_list = recommender.load_dataset()['name'].unique().tolist()
 
      # Handle POST request when the user selects a game
      if request.method == "POST":
         selected_game = request.form.get("game") 
-        items = get_game_rec(selected_game, get_p_data())
+        items = recommender.get_recommendations(selected_game, top_n=15)
         if items.empty or 'Error' in items.columns:
             error_message = items['Error'][0] if 'Error' in items.columns else "No recommendations available."
             return render_template("index.html", games=game_list, items=pd.DataFrame(), selected_game=selected_game, error=error_message)
@@ -54,7 +62,7 @@ def home():
 
 @app.route("/get-games", methods=["GET"])
 def get_games():
-    games = get_p_data()['name'].unique().tolist()
+    games = recommender.dataset['name'].unique().tolist()
     return jsonify(games)
 
 @app.route("/get-game-details", methods=["GET"])
