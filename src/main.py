@@ -9,8 +9,6 @@ from scipy.sparse import load_npz
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
-os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
 USER_DB_PATH = os.getenv(
     "USER_DB_PATH", 
@@ -29,8 +27,10 @@ p_data = None
 def get_p_data():
     global p_data
     if p_data is None:
-        query = "SELECT id, name FROM processed_game"
+        query = "SELECT id, name, all_reviews, genre, recent_reviews, popular_tags FROM processed_game ORDER BY id"
         p_data = pd.read_sql_query(query, con=game_engine)
+        p_data = p_data.dropna(subset=['all_reviews', 'genre', 'recent_reviews', 'popular_tags'])
+        p_data = p_data.reset_index(drop=True)      
     return p_data
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
@@ -44,8 +44,10 @@ def home():
      # Handle POST request when the user selects a game
      if request.method == "POST":
         selected_game = request.form.get("game") 
-        items = get_game_rec(selected_game, get_p_data())
-
+        items = get_game_rec(selected_game, p_data)
+        if items.empty or 'Error' in items.columns:
+            error_message = items['Error'][0] if 'Error' in items.columns else "No recommendations available."
+            return render_template("index.html", games=game_list, items=None, selected_game=selected_game, error=error_message)
       # Get the game name from query parameters
      game_list = get_p_data()['name'].unique().tolist()
      return render_template("index.html", 
@@ -158,5 +160,5 @@ def remove_liked_game():
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Default to 5000
+    port = int(os.environ.get("PORT", 8001))  # Default to 5000
     app.run(host="0.0.0.0", port=port, debug=True)

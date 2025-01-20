@@ -1,5 +1,6 @@
 # Data Preporcess
 import os
+import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix, load_npz, save_npz, hstack
 from sqlalchemy import create_engine, text
@@ -68,6 +69,8 @@ def compute_similarity_matrix(data, weights=None, top_k=30, n_components=200):
 def get_similarity_matrix():
     global similarity_matrix
     if similarity_matrix is None:
+        if not os.path.exists(SIMILARITY_MATRIX_PATH):
+            raise FileNotFoundError(f"Similarity matrix not found at {SIMILARITY_MATRIX_PATH}")
         similarity_matrix = load_npz(SIMILARITY_MATRIX_PATH)
     return similarity_matrix 
     
@@ -118,18 +121,16 @@ def get_game_rec(selected_game, data, top_n=15):
         pd.Series: Recommended game names.
     """
     try:
-        # Find the index of the selected game
         game_index = data[data['name'] == selected_game].index[0]
         similarity_matrix = get_similarity_matrix()
-
-        game_similarities = similarity_matrix[game_index].toarray().flatten()        
+        game_similarities = similarity_matrix[game_index].toarray().flatten()
         similar_games = sorted(enumerate(game_similarities), key=lambda x: x[1], reverse=True)
         recommended_indices = [i[0] for i in similar_games[1:top_n + 1]]
-        
-        return data.iloc[recommended_indices]   
-    
+        return data.iloc[recommended_indices]
     except IndexError:
-        return ValueError(f"'{selected_game}' not found in the dataset.")
+        print(f"Game '{selected_game}' not found.")
+        return pd.DataFrame({'Error': [f"'{selected_game}' not found in the dataset."]})
     except Exception as e:
-        return RuntimeError(f"Error during recommendation: {e}")
+        print(f"Error in recommendation: {e}")
+        return pd.DataFrame({'Error': [f"An error occurred: {e}"]})
 
