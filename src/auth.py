@@ -1,6 +1,5 @@
 import firebase_admin
 from firebase_admin import credentials, auth
-from flask import request, jsonify
 import sqlite3
 import os
 
@@ -9,8 +8,10 @@ cred = credentials.Certificate("firebase-service-account.json")
 firebase_admin.initialize_app(cred)
 
 # Initialize User DB
-USER_DB_PATH = "../data/processed/user.db"
-os.makedirs(os.path.dirname(USER_DB_PATH), exist_ok=True)
+USER_DB_PATH = os.getenv(
+    "USER_DB_PATH", 
+    "postgresql://saved_games_user:0Dr4TmfmQCmCfWVUkJUiw7QHxhdgwAz7@dpg-cu7062l6l47c73c4moh0-a.oregon-postgres.render.com/saved_games"
+    )
 
 # Initialize the database and tables
 def initialize_database():

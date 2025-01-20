@@ -8,14 +8,13 @@ from scipy.sparse import csr_matrix, hstack, save_npz, load_npz
 #Recommendation
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from scipy.sparse import csr_matrix, hstack
 from sklearn.decomposition import TruncatedSVD
 
 GAMES_DB_PATH = os.getenv(
     "GAMES_DB_PATH", 
     "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
     )
-engine = create_engine(GAMES_DB_PATH)
+engine = create_engine(GAMES_DB_PATH, pool_size=10, max_overflow=20)
 
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
@@ -118,7 +117,7 @@ def load_similarity_matrix(data):
     return matrix
 
 # Recommendation function
-def get_game_rec(selected_game, data, similarity_matrix, top_n=15):
+def get_game_rec(selected_game, data, similarity_matrix_path, top_n=15):
     """
     Recommend games based on the selected game.
     Args:
@@ -132,6 +131,8 @@ def get_game_rec(selected_game, data, similarity_matrix, top_n=15):
     try:
         # Find the index of the selected game
         game_index = data[data['name'] == selected_game].index[0]
+        similarity_matrix = load_npz(similarity_matrix_path)
+
         game_similarities = similarity_matrix[game_index].toarray().flatten()        
         similar_games = sorted(enumerate(game_similarities), key=lambda x: x[1], reverse=True)
         recommended_indices = [i[0] for i in similar_games[1:top_n + 1]]

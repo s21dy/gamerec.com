@@ -1,12 +1,22 @@
-import pandas as pd
 import os
+import pandas as pd
 from flask import Flask, render_template, request, jsonify
-from recommendation import get_game_rec, p_data, similarity_matrix
+from recommendation import p_data, get_game_rec
 from fetch_detail import scrape_game_details
-from auth import verify_token, get_user_data, save_user_to_database
-import sqlite3
+from auth import verify_token, save_user_to_database
+from sqlalchemy import create_engine, text
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
+os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
+
+USER_DB_PATH = os.getenv(
+    "USER_DB_PATH", 
+    "postgresql://saved_games_user:0Dr4TmfmQCmCfWVUkJUiw7QHxhdgwAz7@dpg-cu7062l6l47c73c4moh0-a.oregon-postgres.render.com/saved_games"
+    )
+engine = create_engine(USER_DB_PATH, pool_size=10, max_overflow=20)
+
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
              static_folder=os.path.join(BASE_DIR, "static"))
@@ -19,7 +29,7 @@ def home():
      # Handle POST request when the user selects a game
      if request.method == "POST":
         selected_game = request.form.get("game") 
-        items = get_game_rec(selected_game, p_data, similarity_matrix)
+        items = items = get_game_rec(selected_game, p_data, SIMILARITY_MATRIX_PATH)
 
       # Get the game name from query parameters
      game_list = p_data['name'].unique().tolist()
@@ -81,22 +91,16 @@ def add_game():
     data = request.json
     uid = data.get("uid")
     game_id = data.get("game_id")
-    USER_DB_PATH = "../data/processed/user.db"
 
     if not uid or not game_id:
         return jsonify({"error": "UID {uid} and game ID {game_id} are required"}), 400
 
     try:
-        with sqlite3.connect(USER_DB_PATH) as conn:
-            cursor = conn.cursor()
-            # Insert liked game into saved_games table
-            cursor.execute('''
-                INSERT INTO saved_games (uid, game_id)
-                VALUES (?, ?)
-            ''', (uid, game_id))
-            conn.commit()
+        query = text("INSERT INTO saved_games (uid, game_id) VALUES (:uid, :game_id)")
+        with engine.connect() as conn:
+            conn.execute(query, {"uid": uid, "game_id": game_id})
         return jsonify({"message": "Game saved successfully"}), 200
-    except sqlite3.Error as e:
+    except Exception as e:
         return jsonify({"error": f"Database error: {e}"}), 500
 
 @app.route("/api/get-saved-games", methods=["GET"])
@@ -105,22 +109,16 @@ def get_saved_games():
     Retrieve saved games for the signed-in user.
     """
     uid = request.args.get("uid")
-    USER_DB_PATH = "../data/processed/user.db"
 
     if not uid:
         return jsonify({"error": "UID is required"}), 400
 
     try:
-        with sqlite3.connect(USER_DB_PATH) as conn:
-            cursor = conn.cursor()
-            # Fetch saved games
-            cursor.execute('''
-                SELECT game_id FROM saved_games
-                WHERE uid = ?
-            ''', (uid,))
-            games = cursor.fetchall()
+        query = text("SELECT game_id FROM saved_games WHERE uid = :uid")
+        with engine.connect() as conn:
+            games = conn.execute(query, {"uid": uid}).fetchall()
         return jsonify({"saved_games": [game[0] for game in games]}), 200
-    except sqlite3.Error as e:
+    except Exception as e:
         return jsonify({"error": f"Database error: {e}"}), 500
 
 @app.route("/api/remove-game", methods=["DELETE"])
@@ -131,22 +129,18 @@ def remove_liked_game():
     data = request.json
     uid = data.get("uid")
     game_id = data.get("game_id")
-    USER_DB_PATH = "../data/processed/user.db"
 
     if not uid or not game_id:
         return jsonify({"error": "UID and game ID are required"}), 400
 
     try:
-        with sqlite3.connect(USER_DB_PATH) as conn:
-            cursor = conn.cursor()
-            # Remove the liked game
-            cursor.execute('''
-                DELETE FROM saved_games WHERE uid = ? AND game_id = ?
-            ''', (uid, game_id))
-            conn.commit()
+        query = text("DELETE FROM saved_games WHERE uid = :uid AND game_id = :game_id")
+        with engine.connect() as conn:
+            conn.execute(query, {"uid": uid, "game_id": game_id})
         return jsonify({"message": "Game unliked successfully"}), 200
-    except sqlite3.Error as e:
+    except Exception as e:
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    port = int(os.environ.get("PORT", 5001))  # Default to 5000
+    app.run(host="0.0.0.0", port=port, debug=False)
