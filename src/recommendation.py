@@ -39,9 +39,9 @@ def compute_similarity_matrix(data, weights=None, top_k=30, n_components=200):
     vectorizer = TfidfVectorizer(
         stop_words='english',
         ngram_range=(1, 2),  # Unigrams and bigrams
-        max_features=20000,
-        max_df=0.9,
-        min_df=0.01)
+        max_features=10000,
+        max_df=0.8,
+        min_df=0.02)
     
     vectors = []
     for column, weight in weights.items():
@@ -49,17 +49,17 @@ def compute_similarity_matrix(data, weights=None, top_k=30, n_components=200):
         weighted_matrix = tfidf_matrix * weight
         vectors.append(weighted_matrix)
 
-    combined_matrix = hstack(vectors) # Combine all vectors into one matrix
+    combined_matrix = hstack(vectors, format='csr') # Combine all vectors into one matrix
 
     # Dimensionality Reduction with UMAP
-    reduced_matrix = reduce_dimensions(combined_matrix, n_components)
+    reduced_matrix = reduce_dimensions(combined_matrix, n_components=100)
     similarity = cosine_similarity(reduced_matrix, dense_output=False)
     
     # Retain only the top-k similarities for each row
     rows, cols, values = [], [], []
     for row_idx in range(similarity.shape[0]):
         row = similarity.getrow(row_idx).toarray().flatten()
-        top_indices = np.argsort(row)[-top_k - 1:-1][::-1]  # Get top-k indices (excluding self)
+        top_indices =  np.argpartition(row, -top_k)[-top_k:]  # Get top-k indices (excluding self)
         rows.extend([row_idx] * len(top_indices))  # Row indices
         cols.extend(top_indices)                  # Column indices
         values.extend(row[top_indices])           
@@ -133,4 +133,3 @@ def get_game_rec(selected_game, data, top_n=15):
     except Exception as e:
         print(f"Error in recommendation: {e}")
         return pd.DataFrame({'Error': [f"An error occurred: {e}"]})
-

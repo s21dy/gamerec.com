@@ -1,11 +1,10 @@
-import psutil, os
+import os
 import pandas as pd
 from flask import Flask, render_template, request, jsonify
 from recommendation import get_game_rec
 from fetch_detail import scrape_game_details
 from auth import verify_token, save_user_to_database
 from sqlalchemy import create_engine, text
-from scipy.sparse import load_npz
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,10 +26,8 @@ p_data = None
 def get_p_data():
     global p_data
     if p_data is None:
-        query = "SELECT id, name, all_reviews, genre, recent_reviews, popular_tags FROM processed_game ORDER BY id"
+        query = text("SELECT id, name FROM processed_game ORDER BY id")
         p_data = pd.read_sql_query(query, con=game_engine)
-        p_data = p_data.dropna(subset=['all_reviews', 'genre', 'recent_reviews', 'popular_tags'])
-        p_data = p_data.reset_index(drop=True)      
     return p_data
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
@@ -40,16 +37,16 @@ app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
 def home():
      selected_game = []
      items = pd.DataFrame()
-          
+     game_list = get_p_data()['name'].unique().tolist()
+
      # Handle POST request when the user selects a game
      if request.method == "POST":
         selected_game = request.form.get("game") 
-        items = get_game_rec(selected_game, p_data)
+        items = get_game_rec(selected_game, get_p_data())
         if items.empty or 'Error' in items.columns:
             error_message = items['Error'][0] if 'Error' in items.columns else "No recommendations available."
-            return render_template("index.html", games=game_list, items=None, selected_game=selected_game, error=error_message)
-      # Get the game name from query parameters
-     game_list = get_p_data()['name'].unique().tolist()
+            return render_template("index.html", games=game_list, items=pd.DataFrame(), selected_game=selected_game, error=error_message)
+      
      return render_template("index.html", 
                             games=game_list, 
                             items= items,
@@ -57,7 +54,6 @@ def home():
 
 @app.route("/get-games", methods=["GET"])
 def get_games():
-    process = psutil.Process(os.getpid())
     games = get_p_data()['name'].unique().tolist()
     return jsonify(games)
 
