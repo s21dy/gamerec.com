@@ -5,7 +5,8 @@ venv/
 .env/
 .DS_Store
 notebooks/
-data/
+data/ 
+!data/*.npz
 data/processed/process_game.db
 data/raw/steam_games.csv
 src/firebase-service-account.json

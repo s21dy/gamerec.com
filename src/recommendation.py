@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 import numpy as np
-import sqlite3
+from sqlalchemy import create_engine
 from scipy.sparse import csr_matrix, hstack, save_npz, load_npz
 
 #Recommendation
@@ -11,15 +11,20 @@ from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix, hstack
 from sklearn.decomposition import TruncatedSVD
 
+GAMES_DB_PATH = os.getenv(
+    "GAMES_DB_PATH", 
+    "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
+    )
+engine = create_engine(GAMES_DB_PATH)
+
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
 # Load Dataset
-def load_data(db_path="../data/processed/process_game.db"):
-    conn = sqlite3.connect(db_path)
-    data = pd.read_sql_query("SELECT * FROM processed_game", conn)
-    conn.close()
-
+def load_data():
+    query = "SELECT * FROM processed_game ORDER BY id"
+    data = pd.read_sql_query(query, con=engine)
+    
     # Optimize memory usage
     data = data.dropna(subset=['all_reviews', 'genre', 'recent_reviews', 'popular_tags'])
     data = data.reset_index(drop=True)
