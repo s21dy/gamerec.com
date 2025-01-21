@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameRec.com</title>
     <link rel="stylesheet" href="../static/styles.css">
-    <script src="../static/front-end.js"></script>
 </head>
 <body>
     <!-- Sign in section -->
@@ -21,47 +20,38 @@
             <button id="logout-btn" class="logout-btn">Logout</button>
         </div>
     </div>
-    <script type = module src="../static/signin.js"></script>
+
     <!-- Dropdown Form -->
-    <form method="POST" id="search-form">
-        <label for="game">Search for a game:</label>
-        <input type="text" id="game" name="game" placeholder="Type to search..." autocomplete="off">
-        <div id="suggestions" class="suggestions"></div>
-    </form>
-    <script src="../static/scripts.js"></script>
-    
+    <div id="search-container">
+        <form id="search-form">
+            <input type="text" id="game" placeholder="Search for a game..." autocomplete="off" />
+            <div id="suggestions" class="suggestions"></div>
+        </form>
+        <button id="search-btn" class="search-btn">Search</button>
+    </div>
+
     <!-- Display Recommendations -->
-    {% if not items.empty %}
     <div id="rec" class="recommendations">  
-        <h2>Recommendations for "{{ selected_game }}":</h2>
-        <div class="recommendation-container">
-            <button class="nav left" onclick="scrollLeft()">❮</button>
-            <ul class="recommendation-list">
-                {% for index, row in items.iterrows() %}
-                <li class="recommendation-item">
-                    <img src="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{{ row['id'] }}/header.jpg" alt="{{ row['name'] }}">
-                    <a href="https://store.steampowered.com/app/{{ row['id'] }}" target="_blank">
-                        <p>{{ row['name'] }}</p>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-            <button class="nav right" onclick="scrollRight()">❯</button>
+        <h2>Recommendations</h2>
+        <div id="recommendation-list" class="recommendation-list"></div>
+    </div>
+
+    <!-- Game Details Section -->
+    <div class="game-details hidden" id="game-details">
+        <div class="game-details-top">
+            <h1 id="game-title"></h1>
+            <div id="like-container" class="like-container">
+            </div>
         </div>
-        
-        <div class="game-details hidden" id="game-details">
-                <div class = "game-details-top">
-                    <h1 id="game-title"></h1>
-                    <div class = "like-container"></div>
-                </div>
-                <div class="media-slider" id="media-container">
-                    <!-- Media items will be dynamically added here -->
-                </div>
-                <p id="game-description"></p>
+        <div class="media-slider" id="media-container">
+            <!-- Media items will be dynamically added here -->
         </div>
-    {% elif selected_game %}
-        <p>No recommendations found for "{{ selected_game }}".</p>
-    </div>  
-    {% endif %}    
+        <p id="game-description"></p>
+    </div>
+
+    <script src="../static/scripts.js"></script>
+    <script src="../static/scripts-rec.js"></script>
+    <script src="../static/front-end.js"></script>
+    <script type="module" src="../static/signin.js"></script>
 </body>
 </html>

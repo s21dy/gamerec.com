@@ -3,13 +3,11 @@ import os
 import pandas as pd
 import numpy as np
 import faiss
-from sqlalchemy import create_engine, text
 
 #Recommendation
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from scipy.sparse import csr_matrix, load_npz, save_npz, hstack
-
 
 class GameRecommender:
     def __init__(self, db_engine, similarity_matrix_path, top_k=30, n_components=200):
@@ -59,7 +57,7 @@ class GameRecommender:
         """Compute the similarity matrix using FAISS."""
         if self.dataset is None:
             raise ValueError("Dataset is not loaded. Call `load_dataset()` first.")
-
+        
         # Compute weighted TF-IDF vectors
         weights = {'all_reviews': 0.3, 'genre': 0.1, 'recent_reviews': 0.4, 'popular_tags': 0.2}
         vectorizer = TfidfVectorizer(stop_words='english', max_features=20000)
@@ -97,7 +95,7 @@ class GameRecommender:
         if self.similarity_matrix is not None:
             print("Similarity matrix already loaded. Skipping reload.")
             return self.similarity_matrix
-        
+
         # Ensure the dataset is loaded
         if self.dataset is None:
             print("Dataset is not loaded. Loading dataset...")
@@ -108,6 +106,11 @@ class GameRecommender:
         if os.path.exists(self.similarity_matrix_path):
             print(f"Loading similarity matrix from file: {self.similarity_matrix_path}")
             self.similarity_matrix = load_npz(self.similarity_matrix_path)
+             # Initialize the FAISS index from the similarity matrix
+            feature_matrix = self.similarity_matrix.toarray().astype('float32')  # Convert sparse matrix to dense
+            faiss.normalize_L2(feature_matrix)
+            self.faiss_index = faiss.IndexFlatIP(feature_matrix.shape[1])
+            self.faiss_index.add(feature_matrix)
         else:
             print("Similarity matrix file not found. Computing new similarity matrix...")
             self.similarity_matrix = self.compute_similarity_matrix()
@@ -124,25 +127,33 @@ class GameRecommender:
         return self.similarity_matrix
 
     def save_similarity_matrix(self):
-        """Save the similarity matrix to a file."""
+        """Save the similarity matrix to a memory-mapped file."""
         save_npz(self.similarity_matrix_path, self.similarity_matrix)
         print(f"Similarity matrix saved to {self.similarity_matrix_path}.")
 
     def get_recommendations(self, selected_game, top_n=15):
-        """Get game recommendations for the selected game."""
-        if self.dataset is None or self.similarity_matrix is None:
-            raise ValueError("Dataset or similarity matrix is not initialized.")
-
+        """Compute similarity dynamically for the selected game."""
+        if self.dataset is None:
+            self.dataset = self.load_dataset()
+        if self.similarity_matrix is None:
+            self.load_similarity_matrix()
+        # Find the game index
         try:
             game_index = self.dataset[self.dataset['name'] == selected_game].index[0]
-            game_similarities = self.similarity_matrix[game_index].toarray().flatten()
-            top_indices = np.argpartition(game_similarities, -top_n)[-top_n:]
-            recommended_indices = top_indices[np.argsort(-game_similarities[top_indices])]
-            return self.dataset.iloc[recommended_indices]
         except IndexError:
             return pd.DataFrame({'Error': [f"'{selected_game}' not found in the dataset."]})
-        except Exception as e:
-            return pd.DataFrame({'Error': [f"An error occurred: {e}"]})
+        # Query the similarity matrix
+        query_vector = self.similarity_matrix[game_index:game_index + 1].toarray().astype('float32')
+        query_vector = np.ascontiguousarray(query_vector)
+        distances, indices = self.faiss_index.search(query_vector, top_n)
+
+        # Retrieve recommended games
+        recommended_indices = indices.flatten()
+
+        # Exclude the selected game itself
+        recommended_indices = recommended_indices[recommended_indices != game_index]
+        return self.dataset.iloc[recommended_indices]
+    
 
     @staticmethod
     def preprocess_text(text):
@@ -150,3 +161,4 @@ class GameRecommender:
         if not isinstance(text, str):
             return ""  # Convert invalid types to empty string
         return ' '.join(text.split()).lower()
+    

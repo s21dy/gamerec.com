@@ -19,46 +19,32 @@ GAMES_DB_PATH = os.getenv(
     "GAMES_DB_PATH", 
     "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
     )
-game_engine = create_engine(GAMES_DB_PATH, pool_size=10, max_overflow=20)
+game_engine = create_engine(GAMES_DB_PATH, pool_size=1000, max_overflow=20)
 
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
-# Initialize Recommender
-recommender = GameRecommender(
-    db_engine=game_engine,
-    similarity_matrix_path=SIMILARITY_MATRIX_PATH,
-    top_k=30,
-    n_components=200
-)
-try:
-    recommender.load_dataset()
-    recommender.load_similarity_matrix()
-except Exception as e:
-    print(f"Initialization failed: {e}")
-    raise
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
              static_folder=os.path.join(BASE_DIR, "static"))
 
 @app.route("/", methods=["GET", "POST"])
 def home():
-     selected_game = []
-     items = pd.DataFrame()
      game_list = recommender.load_dataset()['name'].unique().tolist()
 
-     # Handle POST request when the user selects a game
-     if request.method == "POST":
-        selected_game = request.form.get("game") 
-        items = recommender.get_recommendations(selected_game, top_n=15)
-        if items.empty or 'Error' in items.columns:
-            error_message = items['Error'][0] if 'Error' in items.columns else "No recommendations available."
-            return render_template("index.html", games=game_list, items=pd.DataFrame(), selected_game=selected_game, error=error_message)
-      
-     return render_template("index.html", 
-                            games=game_list, 
-                            items= items,
-                            selected_game=selected_game)
+     return render_template("index.html", games=game_list)
+
+@app.route("/get-recommendations", methods=["GET"])
+def get_recommendations():
+    selected_game = request.args.get("game")
+    if not selected_game:
+        return jsonify({"error": "Game is required"}), 400
+    
+    items = recommender.get_recommendations(selected_game, top_n=15)
+    if items.empty:
+        return jsonify({"error": "No recommendations found"}), 404
+
+    return jsonify(items.to_dict(orient="records"))
 
 @app.route("/get-games", methods=["GET"])
 def get_games():
@@ -164,5 +150,18 @@ def remove_liked_game():
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":  # Only initialize once
+        recommender = GameRecommender(
+            db_engine=game_engine,
+            similarity_matrix_path=SIMILARITY_MATRIX_PATH,
+            top_k=30,
+            n_components=200
+        )
+        try:
+            recommender.load_dataset()
+            recommender.load_similarity_matrix()
+        except Exception as e:
+            print(f"Initialization failed: {e}")
+            raise
     port = int(os.environ.get("PORT", 8001))  # Default to 5000
     app.run(host="0.0.0.0", port=port, debug=True)
