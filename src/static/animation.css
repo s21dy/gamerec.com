@@ -1,39 +1,15 @@
-/* Slide Up Animation */
-@keyframes slideUp {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Fade In Animation */
+/* Fade-in Animation */
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
-/* Hover Glow Animation */
-@keyframes hoverGlow {
-    from {
-        box-shadow: 0 0 10px rgba(255, 204, 0, 0);
-    }
-    to {
-        box-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
-    }
-}
-
-/* Carousel Slide Animation */
-@keyframes slide {
+/* Slide-in Animation for Recommendation List */
+@keyframes slideIn {
     from {
         transform: translateX(100%);
         opacity: 0;
@@ -44,22 +20,65 @@
     }
 }
 
-/* Recommendations Item Scaling */
+/* Glow Effect for Interactive Elements */
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 5px #ffcc00;
+    }
+    50% {
+        box-shadow: 0 0 20px #ffcc00;
+    }
+    100% {
+        box-shadow: 0 0 5px #ffcc00;
+    }
+}
+
+/* Game Recommendation Hover Effect */
 .recommendation-item:hover {
-    animation: hoverGlow 0.5s ease-in-out;
+    transform: scale(1.1);
+    animation: glow 1.5s infinite;
 }
 
-/* Game Details Slide-Up */
+/* Slide-In for Recommendation List */
+.recommendation-container {
+    animation: slideIn 0.5s ease-in-out;
+}
+
+/* Fade-in effect for Titles */
+h1, h2 {
+    animation: fadeIn 1s ease-in;
+}
+
+/* Button Hover Glow */
+button {
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    animation: glow 1.5s infinite;
+}
+
+/* Dynamic Background Animation */
+@keyframes dynamicBackground {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+body {
+    background: linear-gradient(-45deg, #000, #333, #222, #111);
+    background-size: 400% 400%;
+    animation: dynamicBackground 10s ease infinite;
+}
+
+/* Slide-In for Game Details */
 .game-details {
-    animation: slideUp 0.5s ease-in-out;
+    animation: slideIn 0.5s ease-in-out;
 }
 
-/* Dropdown Suggestions */
-.suggestions {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Media Slider Items */
-.media-item {
-    animation: slide 0.5s ease-in-out;
-}

@@ -25,13 +25,13 @@ game_engine = create_engine(GAMES_DB_PATH, pool_size=1000, max_overflow=20)
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
-
 # Flask app and caching
 app = Flask(
     __name__,
     template_folder=os.path.join(BASE_DIR, "templates"),
     static_folder=os.path.join(BASE_DIR, "static")
 )
+
 cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
 # Global recommender
@@ -174,5 +174,5 @@ def remove_liked_game():
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000)) # remember to change to 5000 when push
+    port = int(os.environ.get("PORT", 8001)) # remember to change to 5000 when push
     app.run(host="0.0.0.0", port=port)

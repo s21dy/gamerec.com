@@ -24,32 +24,37 @@ class GameRecommender:
             print("Dataset already loaded. Skipping reload.")
             return self.dataset
 
-        # Count rows for batching
-        count_query = "SELECT COUNT(*) FROM processed_game WHERE all_reviews IS NOT NULL AND genre IS NOT NULL AND popular_tags IS NOT NULL AND recent_reviews IS NOT NULL"
-        total_rows = pd.read_sql_query(count_query, con=self.db_engine).iloc[0, 0]
+        def chunk_generator():
+            offset = 0
+            while True:
+                query = f"""
+                SELECT id, name, 
+                    all_reviews, 
+                    genre, 
+                    popular_tags, 
+                    recent_reviews
+                FROM processed_game
+                WHERE all_reviews IS NOT NULL
+                AND genre IS NOT NULL
+                AND popular_tags IS NOT NULL
+                AND recent_reviews IS NOT NULL
+                ORDER BY id
+                OFFSET {offset} LIMIT {chunk_size};
+                """
+                chunk = pd.read_sql_query(query, con=self.db_engine)
+                if chunk.empty:
+                    break
+                offset += chunk_size
+                yield chunk
 
-        # Fetch in chunks
-        dataset_chunks = []
-        for offset in range(0, total_rows, chunk_size):
-            query = f"""
-            SELECT id, name, all_reviews, genre, popular_tags, recent_reviews
-            FROM processed_game
-            WHERE all_reviews IS NOT NULL
-            AND genre IS NOT NULL
-            AND popular_tags IS NOT NULL
-            AND recent_reviews IS NOT NULL
-            ORDER BY id
-            OFFSET {offset} LIMIT {chunk_size};
-            """
-            chunk = pd.read_sql_query(query, con=self.db_engine)
-            dataset_chunks.append(chunk)
+        self.dataset = pd.concat(
+            (chunk.assign(
+                genre=lambda df: df['genre'].astype('category'),
+                popular_tags=lambda df: df['popular_tags'].astype('category')
+            ) for chunk in chunk_generator()),
+            ignore_index=True
+        )
 
-        # Combine chunks
-        self.dataset = pd.concat(dataset_chunks, ignore_index=True)
-
-        # Optimize types
-        self.dataset['genre'] = self.dataset['genre'].astype('category')
-        self.dataset['popular_tags'] = self.dataset['popular_tags'].astype('category')
         print(f"Dataset loaded. Size: {len(self.dataset)} rows.")
         return self.dataset
 
@@ -61,28 +66,31 @@ class GameRecommender:
         
         # Compute weighted TF-IDF vectors
         weights = {'all_reviews': 0.3, 'genre': 0.1, 'recent_reviews': 0.4, 'popular_tags': 0.2}
+        combined_text = (
+            self.dataset['all_reviews'].apply(GameRecommender.preprocess_text) * weights['all_reviews'] + " " +
+            self.dataset['genre'].astype(str) * weights['genre'] + " " +
+            self.dataset['recent_reviews'].apply(GameRecommender.preprocess_text) * weights['recent_reviews'] + " " +
+            self.dataset['popular_tags'].astype(str) * weights['popular_tags']
+        )
+        
         vectorizer = TfidfVectorizer(stop_words='english', max_features=20000)
-        vectors = []
-        # Fit vectorizer once and transform for each column
-        for column, weight in weights.items():
-            if column == 'genre' or column == 'popular_tags':
-                tfidf_matrix = vectorizer.fit_transform(self.dataset[column].astype(str))
-            else:
-                tfidf_matrix = vectorizer.fit_transform(self.dataset[column].apply(self.preprocess_text))
-            vectors.append(tfidf_matrix * weight)
+        tfidf_matrix = vectorizer.fit_transform(combined_text)
 
         # Dimensionality Reduction
-        combined_matrix = hstack(vectors, format='csr')
-        reduced_matrix = TruncatedSVD(n_components=self.n_components, random_state=42).fit_transform(combined_matrix)
+        svd = TruncatedSVD(n_components=self.n_components, random_state=42)
+        reduced_matrix = svd.fit_transform(tfidf_matrix)
         reduced_matrix = reduced_matrix.astype('float32')
         
-        # FAISS Index for Similarity Search
-        index = faiss.IndexFlatIP(self.n_components)
+        # Normalize vectors for FAISS
         faiss.normalize_L2(reduced_matrix)
+
+        # Build FAISS Index
+        index = faiss.IndexFlatIP(self.n_components)
         index.add(reduced_matrix)
 
         # Query Top-K Neighbors
         distances, indices = index.search(reduced_matrix, self.top_k)
+        
         rows, cols, values = [], [], []
         for row_idx, (dist, idx) in enumerate(zip(distances, indices)):
             rows.extend([row_idx] * len(idx))
@@ -108,11 +116,14 @@ class GameRecommender:
         if os.path.exists(self.similarity_matrix_path):
             print(f"Loading similarity matrix from file: {self.similarity_matrix_path}")
             self.similarity_matrix = load_npz(self.similarity_matrix_path)
-             # Initialize the FAISS index from the similarity matrix
-            feature_matrix = self.similarity_matrix.toarray().astype('float32')  # Convert sparse matrix to dense
-            faiss.normalize_L2(feature_matrix)
-            self.faiss_index = faiss.IndexFlatIP(feature_matrix.shape[1])
-            self.faiss_index.add(feature_matrix)
+
+            # Initialize the FAISS index if not already done
+            if self.faiss_index is None:
+                print("Initializing FAISS index...")
+                feature_matrix = self.similarity_matrix.toarray().astype('float32')  # Keep it sparse
+                faiss.normalize_L2(feature_matrix)  # Normalize the rows
+                self.faiss_index = faiss.IndexFlatIP(feature_matrix.shape[1])
+                self.faiss_index.add(feature_matrix)
         else:
             print("Similarity matrix file not found. Computing new similarity matrix...")
             self.similarity_matrix = self.compute_similarity_matrix()
@@ -127,6 +138,7 @@ class GameRecommender:
             print("Matrix loaded successfully and is consistent with dataset.")
 
         return self.similarity_matrix
+
 
     def save_similarity_matrix(self):
         """Save the similarity matrix to a memory-mapped file."""

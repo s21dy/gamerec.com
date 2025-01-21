@@ -10,6 +10,36 @@ h1, h2 {
 }
 
 /* Search Form */
+#search-btn {
+    background-color: #ffcc00; /* Bright gold for visibility */
+    color: #000; /* Contrast with the background */
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px; 
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    font-family: Arial, sans-serif;
+}
+
+#search-btn:hover {
+    background-color: #d1ab2f;
+    transform: scale(1.05); 
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); 
+}
+
+#search-btn:focus {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+#search-btn:active {
+    background-color: #b08f23; /* Darker gold for pressed effect */
+    transform: scale(0.98); /* Slight shrink for feedback */
+}
+
 #search-form {
     position: relative;
     color:#f0f0f0;
