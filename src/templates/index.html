@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameRec.com</title>
     <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/animation.css">
 </head>
 <body>
     <!-- Sign in section -->
@@ -32,8 +33,12 @@
 
     <!-- Display Recommendations -->
     <div id="rec" class="recommendations">  
-        <h2>Recommendations</h2>
-        <div id="recommendation-list" class="recommendation-list"></div>
+        <h2 id = "recommendation-title">Recommendations</h2>
+        <button class="nav left">❮</button>
+        <div class="recommendation-container">
+            <div id="recommendation-list" class="recommendation-list"></div>
+        </div>
+        <button class="nav right">❯</button>
     </div>
 
     <!-- Game Details Section -->

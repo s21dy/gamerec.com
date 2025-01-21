@@ -14,12 +14,13 @@ h1, h2 {
     position: relative;
     color:#f0f0f0;
     border: 2px solid #1d1d1d; 
-    padding: 5px 15px; 
+    padding: 5px 5px; 
     background-color: #333333; 
     border-radius: 20px;
 }
 
 #search-form input[type="text"] {
+    width:100%;
     border: none;
     outline: none;
     font-size: 16px;

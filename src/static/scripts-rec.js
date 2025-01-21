@@ -1,5 +1,6 @@
 const recommendationList = document.getElementById("recommendation-list");
 const searchBtn = document.getElementById("search-btn");
+const recommendationTitle = document.getElementById("recommendation-title");
 
 searchBtn.addEventListener("click", function () {
     fetchRecommendations(document.getElementById("game").value);
@@ -13,6 +14,7 @@ function fetchRecommendations(selectedGame) {
             return response.json();
         })
         .then(data => {
+            recommendationTitle.textContent = `Recommendations for ${selectedGame}`;
             recommendationList.innerHTML = ""; // Clear old recommendations
 
             data.forEach(item => {

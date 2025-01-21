@@ -17,6 +17,7 @@ class GameRecommender:
         self.n_components = n_components
         self.dataset = None
         self.similarity_matrix = None
+        self.faiss_index = None
 
     def load_dataset(self, chunk_size=1000):
         if self.dataset is not None:
@@ -62,20 +63,21 @@ class GameRecommender:
         weights = {'all_reviews': 0.3, 'genre': 0.1, 'recent_reviews': 0.4, 'popular_tags': 0.2}
         vectorizer = TfidfVectorizer(stop_words='english', max_features=20000)
         vectors = []
+        # Fit vectorizer once and transform for each column
         for column, weight in weights.items():
-            tfidf_matrix = vectorizer.fit_transform(self.dataset[column].apply(self.preprocess_text))
-            weighted_matrix = tfidf_matrix * weight
-            vectors.append(weighted_matrix)
-        combined_matrix = hstack(vectors).toarray()
+            if column == 'genre' or column == 'popular_tags':
+                tfidf_matrix = vectorizer.fit_transform(self.dataset[column].astype(str))
+            else:
+                tfidf_matrix = vectorizer.fit_transform(self.dataset[column].apply(self.preprocess_text))
+            vectors.append(tfidf_matrix * weight)
 
         # Dimensionality Reduction
+        combined_matrix = hstack(vectors, format='csr')
         reduced_matrix = TruncatedSVD(n_components=self.n_components, random_state=42).fit_transform(combined_matrix)
         reduced_matrix = reduced_matrix.astype('float32')
         
         # FAISS Index for Similarity Search
         index = faiss.IndexFlatIP(self.n_components)
-        print(f"reduced_matrix dtype: {reduced_matrix.dtype}, shape: {reduced_matrix.shape}")
-
         faiss.normalize_L2(reduced_matrix)
         index.add(reduced_matrix)
 
