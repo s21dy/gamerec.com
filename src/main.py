@@ -28,9 +28,22 @@ os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"),
              static_folder=os.path.join(BASE_DIR, "static"))
 
+recommender = GameRecommender(
+    db_engine=game_engine,
+    similarity_matrix_path=SIMILARITY_MATRIX_PATH,
+    top_k=30,
+    n_components=200
+)
+try:
+    recommender.load_dataset()
+    recommender.load_similarity_matrix()
+except Exception as e:
+    print(f"Initialization failed: {e}")
+    raise
+
 @app.route("/", methods=["GET", "POST"])
 def home():
-     game_list = recommender.load_dataset()['name'].unique().tolist()
+     game_list = recommender.dataset['name'].unique().tolist()
 
      return render_template("index.html", games=game_list)
 
@@ -150,18 +163,5 @@ def remove_liked_game():
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":  # Only initialize once
-        recommender = GameRecommender(
-            db_engine=game_engine,
-            similarity_matrix_path=SIMILARITY_MATRIX_PATH,
-            top_k=30,
-            n_components=200
-        )
-        try:
-            recommender.load_dataset()
-            recommender.load_similarity_matrix()
-        except Exception as e:
-            print(f"Initialization failed: {e}")
-            raise
-    port = int(os.environ.get("PORT", 8001))  # Default to 5000
+    port = int(os.environ.get("PORT", 5000))  # Set Render Port to 5000
     app.run(host="0.0.0.0", port=port)
