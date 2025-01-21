@@ -1,84 +1,4 @@
-/* General Enhancements */
-body {
-    background-color: #000;
-    color: #fff;
-    font-family: 'Arial', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-h1, h2 {
-    color: #ffcc00; /* Gold accent for titles */
-    text-shadow: 0 2px 5px rgba(255, 204, 0, 0.8);
-}
-
-/* Button Enhancements */
-button {
-    background: linear-gradient(135deg, #ffcc00, #d4a900);
-    color: black;
-    font-size: 14px;
-    font-weight: bold;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(255, 204, 0, 0.3);
-}
-
-button:hover {
-    background: linear-gradient(135deg, #d4a900, #ffcc00);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(255, 204, 0, 0.5);
-}
-
-/* Input Enhancements */
-input[type="text"] {
-    background: #1f1f1f;
-    border: 2px solid #333;
-    color: #cacaca;
-    padding: 10px;
-    border-radius: 25px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-input[type="text"]:focus {
-    border-color: #ffcc00;
-    box-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
-    outline: none;
-}
-
-/* Dropdown Suggestions */
-.suggestions {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Recommendations Section */
-.recommendation-item {
-    transform: scale(1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.recommendation-item:hover {
-    transform: scale(1.1);
-    box-shadow: 0 8px 16px rgba(255, 204, 0, 0.5);
-}
-
-/* Game Details */
-.game-details {
-    animation: slideUp 0.5s ease-in-out;
-}
-
+/* Slide Up Animation */
 @keyframes slideUp {
     from {
         transform: translateY(20px);
@@ -90,12 +10,56 @@ input[type="text"]:focus {
     }
 }
 
-/* Carousel Navigation */
-.nav {
-    transition: background-color 0.3s ease, transform 0.3s ease;
+/* Fade In Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.nav:hover {
-    background-color: rgba(255, 204, 0, 0.9);
-    transform: scale(1.1);
+/* Hover Glow Animation */
+@keyframes hoverGlow {
+    from {
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0);
+    }
+    to {
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
+    }
+}
+
+/* Carousel Slide Animation */
+@keyframes slide {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Recommendations Item Scaling */
+.recommendation-item:hover {
+    animation: hoverGlow 0.5s ease-in-out;
+}
+
+/* Game Details Slide-Up */
+.game-details {
+    animation: slideUp 0.5s ease-in-out;
+}
+
+/* Dropdown Suggestions */
+.suggestions {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Media Slider Items */
+.media-item {
+    animation: slide 0.5s ease-in-out;
 }
