@@ -7,6 +7,7 @@ venv/
 notebooks/
 data/ 
 !data/*.npz
+!data/process_game/user.db
 data/processed/process_game.db
 data/raw/steam_games.csv
 src/firebase-service-account.json

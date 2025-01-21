@@ -174,5 +174,5 @@ def remove_liked_game():
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8001)) # remember to change to 5000 when push
+    port = int(os.environ.get("PORT", 5000)) # remember to change to 5000 when push
     app.run(host="0.0.0.0", port=port)
