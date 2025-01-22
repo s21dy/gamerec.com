@@ -8,7 +8,7 @@ from flask_caching import Cache
 import sqlite3
 import logging
 
-from memory_profiler import profile
+#from memory_profiler import profile
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,7 +42,7 @@ cache = Cache(app, config={"CACHE_TYPE": "simple"})
 # Global recommender
 recommender = None
 
-@profile
+#@profile
 def get_recommender():
     global recommender
     if recommender is None:
