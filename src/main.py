@@ -27,7 +27,7 @@ game_engine = create_engine(GAMES_DB_PATH,
                             max_overflow=100, 
                             pool_recycle=3600)
 
-SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
+SIMILARITY_MATRIX_PATH = "/data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
 # Flask app and caching
@@ -180,5 +180,5 @@ def remove_liked_game():
         return jsonify({"error": f"Database error: {e}"}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000)) # remember to change to 5000 when push
-    app.run(host="0.0.0.0", port=port)
+    port = int(os.getenv("PORT", 5000))  # remember to change to 5000 when push
+    app.run(host="0.0.0.0", port=port, debug=True)

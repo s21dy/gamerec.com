@@ -2,10 +2,14 @@ import firebase_admin
 from firebase_admin import credentials, auth
 import sqlite3
 import os
+import json
 
+#PYTHONPATH=src gunicorn -w 4 -k gevent --threads 2 -b 127.0.0.1:8000 --timeout 120 src.main:app
 # Initialize Firebase Admin SDK
-cred = credentials.Certificate("firebase-service-account.json")
+service_account_info = json.loads(os.getenv("FIREBASE_SERVICE_ACCOUNT"))
+cred = credentials.Certificate(service_account_info)
 firebase_admin.initialize_app(cred)
+# export FIREBASE_SERVICE_ACCOUNT=$(cat src/firebase-service-account.json)
 
 # Initialize User DB
 USER_DB_PATH = os.getenv(
