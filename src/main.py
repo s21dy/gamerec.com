@@ -27,7 +27,7 @@ game_engine = create_engine(GAMES_DB_PATH,
                             max_overflow=100, 
                             pool_recycle=3600)
 
-SIMILARITY_MATRIX_PATH = "/data/processed/similarity_matrix.npz"
+SIMILARITY_MATRIX_PATH = "data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)
 
 # Flask app and caching
