@@ -66,19 +66,19 @@ class GameRecommender:
         
         # Compute weighted TF-IDF vectors
         weights = {'all_reviews': 0.3, 'genre': 0.1, 'recent_reviews': 0.4, 'popular_tags': 0.2}
-        combined_text = (
-            self.dataset['all_reviews'].apply(GameRecommender.preprocess_text) * weights['all_reviews'] + " " +
-            self.dataset['genre'].astype(str) * weights['genre'] + " " +
-            self.dataset['recent_reviews'].apply(GameRecommender.preprocess_text) * weights['recent_reviews'] + " " +
-            self.dataset['popular_tags'].astype(str) * weights['popular_tags']
-        )
         
         vectorizer = TfidfVectorizer(stop_words='english', max_features=20000)
-        tfidf_matrix = vectorizer.fit_transform(combined_text)
-
-        # Dimensionality Reduction
-        svd = TruncatedSVD(n_components=self.n_components, random_state=42)
-        reduced_matrix = svd.fit_transform(tfidf_matrix)
+        vectors = []
+        # Fit vectorizer once and transform for each column
+        for column, weight in weights.items():
+            if column == 'genre' or column == 'popular_tags':
+                tfidf_matrix = vectorizer.fit_transform(self.dataset[column].astype(str))
+            else:
+                tfidf_matrix = vectorizer.fit_transform(self.dataset[column].apply(self.preprocess_text))
+            vectors.append(tfidf_matrix * weight)
+        combined_matrix = hstack(vectors, format='csr')
+        
+        reduced_matrix = TruncatedSVD(n_components=self.n_components, random_state=42).fit_transform(combined_matrix)
         reduced_matrix = reduced_matrix.astype('float32')
         
         # Normalize vectors for FAISS
@@ -117,13 +117,6 @@ class GameRecommender:
             print(f"Loading similarity matrix from file: {self.similarity_matrix_path}")
             self.similarity_matrix = load_npz(self.similarity_matrix_path)
 
-            # Initialize the FAISS index if not already done
-            if self.faiss_index is None:
-                print("Initializing FAISS index...")
-                feature_matrix = self.similarity_matrix.toarray().astype('float32')  # Keep it sparse
-                faiss.normalize_L2(feature_matrix)  # Normalize the rows
-                self.faiss_index = faiss.IndexFlatIP(feature_matrix.shape[1])
-                self.faiss_index.add(feature_matrix)
         else:
             print("Similarity matrix file not found. Computing new similarity matrix...")
             self.similarity_matrix = self.compute_similarity_matrix()
@@ -137,6 +130,13 @@ class GameRecommender:
         else:
             print("Matrix loaded successfully and is consistent with dataset.")
 
+        # Always rebuild the FAISS index
+        print("Initializing FAISS index...")
+        feature_matrix = self.similarity_matrix.toarray().astype('float32')  # Keep it sparse
+        faiss.normalize_L2(feature_matrix)  # Normalize the rows
+        self.faiss_index = faiss.IndexFlatIP(feature_matrix.shape[1])
+        self.faiss_index.add(feature_matrix)
+        
         return self.similarity_matrix
 
 

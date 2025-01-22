@@ -20,7 +20,10 @@ GAMES_DB_PATH = os.getenv(
     "GAMES_DB_PATH", 
     "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
     )
-game_engine = create_engine(GAMES_DB_PATH, pool_size=1000, max_overflow=20)
+game_engine = create_engine(GAMES_DB_PATH, 
+                            pool_size=10, 
+                            max_overflow=10, 
+                            pool_recycle=3600)
 
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
 os.makedirs(os.path.dirname(SIMILARITY_MATRIX_PATH), exist_ok=True)

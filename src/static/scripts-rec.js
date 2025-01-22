@@ -6,8 +6,22 @@ searchBtn.addEventListener("click", function () {
     fetchRecommendations(document.getElementById("game").value);
 })   
 
+function showSpinner() {
+    document.getElementById("spinner").classList.add("active");
+}
+  
+  // Function to hide the spinner
+function hideSpinner() {
+    document.getElementById("spinner").classList.remove("active");;
+}
+
+function clearGameDetails() {
+    const gameDetails = document.getElementById("game-details");
+    gameDetails.classList.add("hidden");
+}
 
 function fetchRecommendations(selectedGame) {
+    showSpinner();
     fetch(`/get-recommendations?game=${encodeURIComponent(selectedGame)}`)
         .then(response => {
             if (!response.ok) throw new Error("Failed to fetch recommendations");
@@ -39,6 +53,8 @@ function fetchRecommendations(selectedGame) {
         .catch(error => {
             console.error("Error fetching recommendations:", error);
             recommendationList.innerHTML = `<p>Error fetching recommendations</p>`;
+        }).finally(() => {
+            hideSpinner();
         });
 }
 
@@ -54,7 +70,7 @@ function loadGameDetails(gameId) {
     gameDescription.innerHTML = "";
     mediaContainer.innerHTML = "";
     likeContainer.innerHTML = "";
-
+    showSpinner();
     fetch(`/get-game-details?id=${gameId}`)
         .then(response => {
             if (!response.ok) throw new Error(`Failed to fetch game details for gameId: ${gameId}`);
@@ -81,7 +97,8 @@ function loadGameDetails(gameId) {
             gameDetails.classList.remove("hidden");
 
         })
-        .catch(error => console.error("Error loading game details:", error));
+        .catch(error => console.error("Error loading game details:", error))
+        .finally(() => hideSpinner());
 }
 
 

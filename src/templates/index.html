@@ -32,7 +32,11 @@
     </div>
 
     <!-- Display Recommendations -->
-    <div id="rec" class="recommendations">  
+    <div id="rec" class="recommendations">
+        <div id="spinner" class="spinner-container">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loading-text">Loading...</div>
+        </div> 
         <h2 id = "recommendation-title">Recommendations</h2>
         <button class="nav left">❮</button>
         <div class="recommendation-container">
@@ -43,6 +47,10 @@
 
     <!-- Game Details Section -->
     <div class="game-details hidden" id="game-details">
+        <div id="spinner" class="spinner-container">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loading-text">Loading...</div>
+        </div>
         <div class="game-details-top">
             <h1 id="game-title"></h1>
             <div id="like-container" class="like-container">
