@@ -7,7 +7,6 @@ fetch("/get-games")
     .then(response => response.json())
     .then(data => {
         games = data; // Store the retrieved games list
-        console.log("Fetched games success")
     })
     .catch(error => {
         console.error("Error fetching games:", error);
@@ -33,5 +32,3 @@ input.addEventListener("input", function() {
         });
     }
 });
-
-

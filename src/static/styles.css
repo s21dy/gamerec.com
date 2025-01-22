@@ -311,7 +311,7 @@ h1, h2 {
 
 /* Logout Button */
 .logout-btn {
-    background-color: #e84545; /* Red Logout Button */
+    background-color: #e84545; 
     color: white;
     font-size: 14px;
     padding: 6px 12px;
@@ -328,3 +328,66 @@ h1, h2 {
 }
 
 
+/* Navigation Panel */
+.nav-panel {
+    position: fixed;
+    top: 0;
+    right: -300px; 
+    width: 300px;
+    height: 100%;
+    background-color: #222; /* Match site background */
+    color: #fff;
+    overflow-y: auto;
+    transition: right 0.3s ease; /* Smooth slide-in effect */
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5); /* Shadow on the left side */
+    z-index: 1000;
+    padding: 20px;
+    border-left: 2px solid #ffcc00; /* Gold border for consistency */
+}
+
+/* Hide panel content when closed */
+.nav-panel.closed {
+    display: none;
+}
+
+/* Navigation Button */
+#open-nav-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px; /* Positioned on the right */
+    background-color: #ffcc00; /* Bright gold for visibility */
+    color: #000;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 30px; /* Rounded rectangle */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    z-index: 1100; /* Above everything */
+}
+
+#open-nav-btn:hover {
+    background-color: #d1ab2f; /* Darker gold on hover */
+    transform: scale(1.05); /* Slight enlargement for feedback */
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); 
+}
+
+#open-nav-btn:focus {
+    outline: 2px solid #fff; /* Accessibility outline */
+    outline-offset: 3px;
+}
+
+#open-nav-btn:active {
+    background-color: #b08f23; /* Pressed state */
+    transform: scale(0.95);
+}
+
+.liked-game-item  img{
+    width: 250px;
+}

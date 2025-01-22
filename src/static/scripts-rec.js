@@ -1,10 +1,21 @@
 const recommendationList = document.getElementById("recommendation-list");
 const searchBtn = document.getElementById("search-btn");
 const recommendationTitle = document.getElementById("recommendation-title");
+const gameInput = document.getElementById("game");
 
+ 
+// Trigger search on button click
 searchBtn.addEventListener("click", function () {
-    fetchRecommendations(document.getElementById("game").value);
-})   
+    fetchRecommendations(gameInput.value);
+});
+
+// Trigger search on pressing "Enter"
+gameInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        fetchRecommendations(gameInput.value);
+    }
+});
+
 
 function showSpinner() {
     document.getElementById("spinner").classList.add("active");

@@ -23,13 +23,13 @@
 /* Glow Effect for Interactive Elements */
 @keyframes glow {
     0% {
-        box-shadow: 0 0 5px #ffcc00;
+        box-shadow: 0 0 5px #d7d7d7;
     }
     50% {
-        box-shadow: 0 0 20px #ffcc00;
+        box-shadow: 0 0 20px #d7d7d7;
     }
     100% {
-        box-shadow: 0 0 5px #ffcc00;
+        box-shadow: 0 0 5px #d7d7d7;
     }
 }
 
@@ -58,18 +58,6 @@ button:hover {
     animation: glow 1.5s infinite;
 }
 
-/* Dynamic Background Animation */
-@keyframes dynamicBackground {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
-}
 
 body {
     background: linear-gradient(-45deg, #000, #333, #222, #111);

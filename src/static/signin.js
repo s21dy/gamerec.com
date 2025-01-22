@@ -34,9 +34,9 @@ const storage = {
 // Update UI based on login status
 function updateUI(userId) {
     const loginBtn = document.getElementById("login-btn");
-    const userInfo = document.getElementById("user-info");
-    const userIcon = document.getElementById("user-icon");
-    const userName = document.getElementById("user-name");
+    const userInfo = document.getElementById("user-info-section");
+    const userIcon = document.getElementById("nav-user-icon");
+    const userName = document.getElementById("nav-user-name");
 
     if (userId) {
         loginBtn.style.display = "none";
@@ -46,6 +46,19 @@ function updateUI(userId) {
     } else {
         loginBtn.style.display = "block";
         userInfo.style.display = "none";
+    }
+}
+// Toggle navigation panel visibility
+function toggleNavPanel() {
+    const navPanel = document.getElementById("nav-panel");
+    const isOpen = navPanel.style.right === "0px";
+
+    if (isOpen) {
+        navPanel.style.right = "-300px"; // Hide panel
+        navPanel.classList.add("closed"); // Reset padding
+    } else {
+        navPanel.style.right = "0px"; // Show panel
+        navPanel.classList.remove("closed");// Add padding
     }
 }
 
@@ -72,6 +85,36 @@ async function fetchLikedGames(userId) {
         console.error("Error fetching liked games:", error);
         return [];
     }
+}
+
+// Show liked games in the navigation panel
+async function showLikedGames() {
+    const likedGamesList = document.getElementById("liked-games-list");
+    const userId = storage.get("userId");
+
+    likedGamesList.innerHTML = ""; // Clear old content
+
+    if (!userId) {
+        likedGamesList.innerHTML = "<p>Please sign in to view your liked games.</p>";
+        return;
+    }
+
+    const likedGames = storage.get("likedGames") || [];
+    if (likedGames.length === 0) {
+        likedGamesList.innerHTML = "<p>No liked games found.</p>";
+        return;
+    }
+
+    likedGames.forEach(gameId => {
+        const likedGameItem = document.createElement("div");
+        likedGameItem.classList.add("liked-game-item");
+        likedGameItem.innerHTML = `
+            <a href="https://store.steampowered.com/app/${gameId}" target="_blank">
+                <img src="https://steamcdn-a.akamaihd.net/steam/apps/${gameId}/header.jpg" alt="Game header">
+            </a>    
+        `;
+        likedGamesList.appendChild(likedGameItem);
+    });
 }
 
 // Handle sign-in
@@ -105,6 +148,7 @@ async function handleSignOut() {
 
         updateUI(null);
         resetLikeButtons();
+        location.reload();
     } catch (error) {
         console.error("Error logging out:", error);
     }
@@ -112,10 +156,19 @@ async function handleSignOut() {
 
 // Initialize app
 document.addEventListener("DOMContentLoaded", () => {
+    const navPanel = document.getElementById("nav-panel");
+    navPanel.style.right = "-300px";
+    
     const userId = storage.get("userId");
     updateUI(userId);
 
     // Event listeners for login and logout
     document.getElementById("login-btn").addEventListener("click", handleSignIn);
-    document.getElementById("logout-btn").addEventListener("click", handleSignOut);
+    document.getElementById("logout-btn-nav").addEventListener("click", handleSignOut);
+
+    // Event listener for opening the nav and showing liked games
+    document.getElementById("open-nav-btn").addEventListener("click", () => {
+        toggleNavPanel(); // Toggles the navigation panel
+        showLikedGames(); // Updates the liked games list
+    });
 });

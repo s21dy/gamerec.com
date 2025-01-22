@@ -8,6 +8,8 @@ from flask_caching import Cache
 import sqlite3
 import logging
 
+from memory_profiler import profile
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,8 +23,8 @@ GAMES_DB_PATH = os.getenv(
     "postgresql://game_ztiv_user:0dclW2K3zpb80TNxSuF85nBEi0YpdRxV@dpg-cu6qj3ogph6c73c97n6g-a.oregon-postgres.render.com/game_ztiv"
     )
 game_engine = create_engine(GAMES_DB_PATH, 
-                            pool_size=1000, 
-                            max_overflow=1000, 
+                            pool_size=200, 
+                            max_overflow=100, 
                             pool_recycle=3600)
 
 SIMILARITY_MATRIX_PATH = "../data/processed/similarity_matrix.npz"
@@ -40,6 +42,7 @@ cache = Cache(app, config={"CACHE_TYPE": "simple"})
 # Global recommender
 recommender = None
 
+@profile
 def get_recommender():
     global recommender
     if recommender is None:
@@ -178,4 +181,4 @@ def remove_liked_game():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000)) # remember to change to 5000 when push
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)

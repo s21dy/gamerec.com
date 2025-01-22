@@ -10,7 +10,7 @@ from sklearn.decomposition import TruncatedSVD
 from scipy.sparse import csr_matrix, load_npz, save_npz, hstack
 
 class GameRecommender:
-    def __init__(self, db_engine, similarity_matrix_path, top_k=30, n_components=200):
+    def __init__(self, db_engine, similarity_matrix_path, top_k=15, n_components=200):
         self.db_engine = db_engine
         self.similarity_matrix_path = similarity_matrix_path
         self.top_k = top_k
@@ -106,45 +106,47 @@ class GameRecommender:
         self.similarity_matrix = csr_matrix((values, (rows, cols)), shape=(self.dataset.shape[0], self.dataset.shape[0]))
         return self.similarity_matrix
 
+    def is_matrix_consistent(self):
+        return self.similarity_matrix is not None and \
+            self.similarity_matrix.shape[0] == len(self.dataset)
+    
     def load_similarity_matrix(self):
-        """Load or compute the similarity matrix."""
-        if self.similarity_matrix is not None:
-            print("Similarity matrix already loaded. Skipping reload.")
-            return self.similarity_matrix
-
+        """Load or compute the similarity matrix."""   
         # Ensure the dataset is loaded
         if self.dataset is None:
             print("Dataset is not loaded. Loading dataset...")
-            self.load_dataset()
+            self.load_dataset(columns=["id", "feature_1", "feature_2"])
             print(f"Dataset loaded. Size: {len(self.dataset)} rows.")
 
-        # Check if the file exists
+        # Load or compute the similarity matrix
         if os.path.exists(self.similarity_matrix_path):
             print(f"Loading similarity matrix from file: {self.similarity_matrix_path}")
             self.similarity_matrix = load_npz(self.similarity_matrix_path)
-
         else:
             print("Similarity matrix file not found. Computing new similarity matrix...")
             self.similarity_matrix = self.compute_similarity_matrix()
             self.save_similarity_matrix()
 
-        # Verify consistency
-        if self.similarity_matrix.shape[0] != len(self.dataset):
-            print("Matrix row count does not match dataset row count. Recomputing matrix...")
+        # Validate consistency
+        if not self.is_matrix_consistent():
+            print("Matrix is inconsistent. Recomputing...")
             self.similarity_matrix = self.compute_similarity_matrix()
             self.save_similarity_matrix()
-        else:
-            print("Matrix loaded successfully and is consistent with dataset.")
 
-        # Always rebuild the FAISS index
-        print("Initializing FAISS index...")
-        feature_matrix = self.similarity_matrix.toarray().astype('float32')  # Keep it sparse
-        faiss.normalize_L2(feature_matrix)  # Normalize the rows
-        self.faiss_index = faiss.IndexFlatIP(feature_matrix.shape[1])
-        self.faiss_index.add(feature_matrix)
-        
+        # Initialize FAISS index
+        self.initialize_faiss_index()
+
         return self.similarity_matrix
 
+    def initialize_faiss_index(self):
+        print("Initializing FAISS index...")
+        self.faiss_index = faiss.IndexFlatIP(self.similarity_matrix.shape[1])
+        for row_idx in range(self.similarity_matrix.shape[0]):
+    
+            sparse_row = self.similarity_matrix.getrow(row_idx)
+            dense_row = sparse_row.toarray().astype('float32')
+            faiss.normalize_L2(dense_row)
+            self.faiss_index.add(dense_row)
 
     def save_similarity_matrix(self):
         """Save the similarity matrix to a memory-mapped file."""
