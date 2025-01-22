@@ -24,28 +24,34 @@ class GameRecommender:
             print("Dataset already loaded. Skipping reload.")
             return self.dataset
 
+        query_template = """
+        SELECT id, name, 
+            all_reviews, 
+            genre, 
+            popular_tags, 
+            recent_reviews
+        FROM processed_game
+        WHERE all_reviews IS NOT NULL
+        AND genre IS NOT NULL
+        AND popular_tags IS NOT NULL
+        AND recent_reviews IS NOT NULL
+        ORDER BY id
+        OFFSET {offset} LIMIT {chunk_size};
+        """
+
         def chunk_generator():
             offset = 0
             while True:
-                query = f"""
-                SELECT id, name, 
-                    all_reviews, 
-                    genre, 
-                    popular_tags, 
-                    recent_reviews
-                FROM processed_game
-                WHERE all_reviews IS NOT NULL
-                AND genre IS NOT NULL
-                AND popular_tags IS NOT NULL
-                AND recent_reviews IS NOT NULL
-                ORDER BY id
-                OFFSET {offset} LIMIT {chunk_size};
-                """
-                chunk = pd.read_sql_query(query, con=self.db_engine)
-                if chunk.empty:
+                query = query_template.format(offset=offset, chunk_size=chunk_size)
+                try:
+                    chunk = pd.read_sql_query(query, con=self.db_engine)
+                    if chunk.empty:
+                        break
+                    yield chunk
+                    offset += chunk_size
+                except Exception as e:
+                    print(f"Error loading chunk: {e}")
                     break
-                offset += chunk_size
-                yield chunk
 
         self.dataset = pd.concat(
             (chunk.assign(
