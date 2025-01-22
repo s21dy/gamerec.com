@@ -7,6 +7,7 @@ const gameInput = document.getElementById("game");
 // Trigger search on button click
 searchBtn.addEventListener("click", function () {
     fetchRecommendations(gameInput.value);
+    clearGameDetails();
 });
 
 // Trigger search on pressing "Enter"
