@@ -6,7 +6,9 @@ import json
 
 #PYTHONPATH=src gunicorn -w 4 -k gevent --threads 2 -b 127.0.0.1:8000 --timeout 120 src.main:app
 # Initialize Firebase Admin SDK
-service_account_info = json.loads(os.getenv("FIREBASE_SERVICE_ACCOUNT"))
+#service_account_info = json.loads(os.getenv("FIREBASE_SERVICE_ACCOUNT"))
+with open("src/firebase-service-account.json", "r") as file:
+    service_account_info = json.load(file)
 cred = credentials.Certificate(service_account_info)
 firebase_admin.initialize_app(cred)
 # export FIREBASE_SERVICE_ACCOUNT=$(cat src/firebase-service-account.json)
