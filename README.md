@@ -1,6 +1,6 @@
 # GameRec.com 🎮🔍
 
-GameRec.com is an interactive **game recommendation platform** that helps users discover new games based on their preferences. The application integrates with **Steam API** to fetch game details, provides an interactive UI for exploring recommendations, and enables users to **sign in with Google** to save their favorite games.
+**GameRec.com** is an advanced game recommendation platform that helps users discover new games based on their unique preferences. Unlike Steam’s built-in recommendation system, which primarily relies on game tags and popularity, GameRec.com leverages a Machine Learning model powered by a **Compressed Sparse Row (CSR) matrix** to analyze deep relationships between games. This approach efficiently handles large-scale game-player interaction data, capturing nuanced similarities beyond traditional tag-based filtering. By applying collaborative filtering and content-based learning, GameRec.com delivers more personalized, data-driven recommendations, helping users find hidden gems that align with their gaming interests. The platform integrates with Steam API to fetch game details, provides an intuitive UI for seamless exploration, and allows users to sign in with Google to save and track their favorite games.
 
 ## 🌟 Features
 
