@@ -13,22 +13,28 @@ GameRec.com is an interactive **game recommendation platform** that helps users 
 
 ## 📂 Project Structure
 
-├── auth.py # Handles authentication (Firebase) │ 
-├── fetch_detail.py # Retrieves game details │ 
-├── recommendation.py # Game recommendation logic │ 
-├── youtube_call.py # Fetches YouTube-related game content │
-├── main.py # Main backend script (Flask API) │ 
-│── templates/ │
-    ├── index.html # Main UI layout │ 
-│── static/ │
-    ├── front-end.js # Handles UI interactions │ 
-    ├── scripts.js # Handles game search & suggestions │ 
-    ├── scripts-rec.js # Manages recommendations │ 
-    ├── signin.js # Google Sign-In logic │
-    ├── static/ # CSS & other assets │ 
-│── README.md # Project documentation 
-│── requirements.txt # Python dependencies 
-│── .gitignore # Git ignored files (e.g., secrets, cache)
+```php
+GameRec/
+├── auth.py               # Handles authentication (Firebase)
+├── fetch_detail.py       # Retrieves game details
+├── recommendation.py     # Game recommendation logic
+├── youtube_call.py       # Fetches YouTube-related game content
+├── main.py               # Main backend script (Flask API)
+├── firebase-service-account.json  # Firebase credentials (DO NOT EXPOSE)
+│
+│── templates/
+│   ├── index.html            # Main UI layout
+│── statics/
+│   ├── front-end.js          # Handles UI interactions
+│   ├── scripts.js            # Handles game search & suggestions
+│   ├── scripts-rec.js        # Manages recommendations
+│   ├── signin.js             # Google Sign-In logic
+│   ├── static/               # CSS & other assets
+│
+│── README.md                 # Project documentation
+│── requirements.txt           # Python dependencies
+│── .gitignore                 # Git ignored files (e.g., secrets, cache)
+```
 
 ## 🚀 Getting Started
 
