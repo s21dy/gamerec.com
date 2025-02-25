@@ -89,7 +89,9 @@ pip install -r requirements.txt
 ```
 
 🛡 Security Notes
-🚨 DO NOT expose your ```firebase-service-account.json``` or Steam API key publicly. Use `.gitignore` to exclude sensitive files.
+
+🚨 DO NOT expose your ```firebase-service-account.json``` or Steam API key publicly. 
+Use `.gitignore` to exclude sensitive files.
 
 📜 License
 MIT License © 2025 Sandy Yang
